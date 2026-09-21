@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { Movie } from '../back-end/schemas/MoviesTypes';
 import MovieItem from './components/MovieItem';
+import './app.css';
 
 type MoviesApiResponse = {
   results: Movie[];
@@ -24,8 +25,8 @@ export default function App() {
   }, []);
 
   return (
-    <main>
-      <header>
+    <main className="app-shell">
+      <header className="app-header">
         <h1>Films populaires</h1>
         <h2>
           Films tendances en France, d'après les données de{' '}
@@ -35,7 +36,7 @@ export default function App() {
       <section>
         {error ? <p>{error}</p> : null}
         {movies ? (
-          <ul>
+          <ul className="movie-grid">
             {movies.map((movie) => (
               <li key={movie.id}>
                 <article>
@@ -45,7 +46,7 @@ export default function App() {
             ))}
           </ul>
         ) : error ? null : (
-          <p>Loading...</p>
+          <p className="status-message">Loading...</p>
         )}
       </section>
     </main>

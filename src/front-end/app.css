@@ -1,0 +1,61 @@
+.app-shell {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+}
+
+.app-header {
+  margin-bottom: 2rem;
+}
+
+.app-header h1 {
+  margin: 0 0 0.25rem;
+  font-size: 2rem;
+}
+
+.app-header h2 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 400;
+  color: #a0a0a0;
+}
+
+.movie-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 1.5rem;
+}
+
+.status-message {
+  color: #a0a0a0;
+}
+
+.movie-card {
+  display: flex;
+  flex-direction: column;
+  background-color: #161b22;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.movie-poster {
+  width: 100%;
+  aspect-ratio: 2 / 3;
+  object-fit: cover;
+  background-color: #21262d;
+}
+
+.movie-card__content {
+  padding: 0.75rem;
+}
+
+.movie-card__content h2 {
+  margin: 0 0 0.25rem;
+  font-size: 1rem;
+}
+
+.movie-card__content p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #a0a0a0;
+}
