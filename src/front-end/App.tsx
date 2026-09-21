@@ -25,17 +25,29 @@ export default function App() {
 
   return (
     <main>
-      <h1>Popular Movies</h1>
-      {error ? <p>{error}</p> : null}
-      {movies ? (
-        <ul>
-          {movies.map((movie) => (
-            <MovieItem key={movie.id} movie={movie} />
-          ))}
-        </ul>
-      ) : error ? null : (
-        <p>Loading...</p>
-      )}
+      <header>
+        <h1>Films populaires</h1>
+        <h2>
+          Films tendances en France, d'après les données de{' '}
+          <b>The Movie Database</b>
+        </h2>
+      </header>
+      <section>
+        {error ? <p>{error}</p> : null}
+        {movies ? (
+          <ul>
+            {movies.map((movie) => (
+              <li key={movie.id}>
+                <article>
+                  <MovieItem movie={movie} />
+                </article>
+              </li>
+            ))}
+          </ul>
+        ) : error ? null : (
+          <p>Loading...</p>
+        )}
+      </section>
     </main>
   );
 }
