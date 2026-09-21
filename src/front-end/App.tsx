@@ -33,7 +33,9 @@ export default function App() {
             <MovieItem key={movie.id} movie={movie} />
           ))}
         </ul>
-      ) : error ? null : <p>Loading...</p>}
+      ) : error ? null : (
+        <p>Loading...</p>
+      )}
     </main>
   );
 }
