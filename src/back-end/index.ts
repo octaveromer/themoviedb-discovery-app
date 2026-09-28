@@ -1,6 +1,6 @@
 import express from 'express';
 import { getTmdbAccessToken } from './config';
-import { toSupportedMovie } from './utils';
+import { tmdbHeaders, toSupportedMovie } from './utils';
 import { DEFAULT_LANGUAGE, DEFAULT_PAGE, DEFAULT_REGION } from './constants';
 import type {
   MoviesApiResponse,
@@ -41,12 +41,7 @@ app.get(
 
       const response = await fetch(
         `https://api.themoviedb.org/3/movie/popular?${queryParams.toString()}`,
-        {
-          headers: {
-            Authorization: `Bearer ${getTmdbAccessToken()}`,
-            'Content-Type': 'application/json;charset=utf-8',
-          },
-        },
+        { headers: tmdbHeaders(getTmdbAccessToken()) },
       );
 
       if (!response.ok) {
