@@ -1,5 +1,5 @@
 import express from 'express';
-import { tmdbAccessToken } from './config';
+import { getTmdbAccessToken } from './config';
 import { toSupportedMovie } from './utils';
 import { DEFAULT_LANGUAGE, DEFAULT_PAGE, DEFAULT_REGION } from './constants';
 import type {
@@ -43,7 +43,7 @@ app.get(
         `https://api.themoviedb.org/3/movie/popular?${queryParams.toString()}`,
         {
           headers: {
-            Authorization: `Bearer ${tmdbAccessToken}`,
+            Authorization: `Bearer ${getTmdbAccessToken()}`,
             'Content-Type': 'application/json;charset=utf-8',
           },
         },
