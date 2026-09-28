@@ -1,4 +1,11 @@
 import { useEffect, useState } from 'react';
+import {
+  BrowserRouter,
+  Navigate,
+  Route,
+  Routes,
+  useParams,
+} from 'react-router';
 import type { Movie } from '../back-end/schemas/MoviesTypes';
 import {
   DEFAULT_LANGUAGE,
@@ -12,7 +19,7 @@ type MoviesApiResponse = {
   results: Movie[];
 };
 
-export default function App() {
+function MoviesPage() {
   const [movies, setMovies] = useState<Movie[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -40,7 +47,7 @@ export default function App() {
   }, [language, page, region]);
 
   return (
-    <main className="app-shell">
+    <>
       <header className="app-header">
         <h1>Films populaires</h1>
         <h2>
@@ -64,6 +71,35 @@ export default function App() {
           <p className="status-message">Loading...</p>
         )}
       </section>
-    </main>
+    </>
+  );
+}
+
+function MovieDetailPage() {
+  const { id } = useParams();
+
+  return <p className="status-message">Détail du film {id}</p>;
+}
+
+function NotFoundPage() {
+  return (
+    <section className="empty-state">
+      <h1>Cette page n'existe pas</h1>
+    </section>
+  );
+}
+
+export default function App() {
+  return (
+    <BrowserRouter>
+      <main className="app-shell">
+        <Routes>
+          <Route path="/" element={<Navigate to="/movies" replace />} />
+          <Route path="/movies" element={<MoviesPage />} />
+          <Route path="/movies/:id" element={<MovieDetailPage />} />
+          <Route path="*" element={<NotFoundPage />} />
+        </Routes>
+      </main>
+    </BrowserRouter>
   );
 }
