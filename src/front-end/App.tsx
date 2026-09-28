@@ -1,6 +1,12 @@
 import { useEffect, useState } from 'react';
 import type { Movie } from '../back-end/schemas/MoviesTypes';
+import {
+  DEFAULT_LANGUAGE,
+  DEFAULT_PAGE,
+  DEFAULT_REGION,
+} from '../back-end/constants';
 import MovieItem from './components/MovieItem';
+import './app.css';
 
 type MoviesApiResponse = {
   results: Movie[];
@@ -10,8 +16,18 @@ export default function App() {
   const [movies, setMovies] = useState<Movie[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // read parameters from the URL query string
+  const queryParams = new URLSearchParams(window.location.search);
+  const language = queryParams.get('language') || DEFAULT_LANGUAGE;
+  const page = queryParams.get('page') || DEFAULT_PAGE;
+  const region = queryParams.get('region') || DEFAULT_REGION;
+
+  // useEffect hook to fetch data from an API when the component mounts
   useEffect(() => {
-    fetch('/api/movies/popular')
+    // fetch data from an API /api/movies/popular
+    fetch(
+      `/api/movies/popular?language=${language}&page=${page}&region=${region}`,
+    )
       .then((response) => {
         if (!response.ok) {
           throw new Error('Impossible de récupérer les films populaires.');
@@ -21,19 +37,33 @@ export default function App() {
       })
       .then((data) => setMovies(data.results))
       .catch(() => setError('Impossible de charger les films populaires.'));
-  }, []);
+  }, [language, page, region]);
 
   return (
-    <main>
-      <h1>Popular Movies</h1>
-      {error ? <p>{error}</p> : null}
-      {movies ? (
-        <ul>
-          {movies.map((movie) => (
-            <MovieItem key={movie.id} movie={movie} />
-          ))}
-        </ul>
-      ) : error ? null : <p>Loading...</p>}
+    <main className="app-shell">
+      <header className="app-header">
+        <h1>Films populaires</h1>
+        <h2>
+          Films tendances en France, d'après les données de{' '}
+          <b>The Movie Database</b>
+        </h2>
+      </header>
+      <section>
+        {error ? <p>{error}</p> : null}
+        {movies ? (
+          <ul className="movie-grid">
+            {movies.map((movie) => (
+              <li key={movie.id}>
+                <article>
+                  <MovieItem movie={movie} />
+                </article>
+              </li>
+            ))}
+          </ul>
+        ) : error ? null : (
+          <p className="status-message">Loading...</p>
+        )}
+      </section>
     </main>
   );
 }
