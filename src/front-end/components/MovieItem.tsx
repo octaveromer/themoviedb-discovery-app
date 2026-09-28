@@ -1,4 +1,5 @@
 import type { Movie } from '../../back-end/schemas/MoviesTypes';
+import { Link } from 'react-router';
 
 type MovieItemProps = {
   movie: Movie;
@@ -12,7 +13,7 @@ export default function MovieItem({ movie }: MovieItemProps) {
   const rating = movie.vote_average.toFixed(1);
 
   return (
-    <div className="movie-card">
+    <Link className="movie-card" to={`/movies/${movie.id}`}>
       {posterUrl ? (
         <img
           className="movie-poster"
@@ -28,6 +29,6 @@ export default function MovieItem({ movie }: MovieItemProps) {
           {releaseYear} · Note {rating}
         </p>
       </div>
-    </div>
+    </Link>
   );
 }
