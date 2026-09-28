@@ -23,6 +23,13 @@ export type TmdbMovie = {
   vote_average: number;
   vote_count: number;
 };
+
+export type TmdbMovieDetails = TmdbMovie & {
+  genres: Array<{ id: number; name: string }>;
+  runtime: number | null;
+  status: string;
+  tagline: string | null;
+};
 // TypeScript type for the API response when fetching movies, containing an array of supported Movie objects.
 export type MoviesApiResponse = {
   page: number;
