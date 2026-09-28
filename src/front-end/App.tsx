@@ -1,4 +1,10 @@
-import { useEffect, useState } from 'react';
+import {
+  useEffect,
+  useState,
+  type Dispatch,
+  type ReactNode,
+  type SetStateAction,
+} from 'react';
 import {
   BrowserRouter,
   Link,
@@ -20,6 +26,61 @@ type MoviesApiResponse = {
   results: Movie[];
 };
 
+type Theme = 'light' | 'dark';
+
+function getPreferredTheme(): Theme {
+  try {
+    const saved = localStorage.getItem('theme');
+    if (saved === 'light' || saved === 'dark') {
+      return saved;
+    }
+  } catch {
+    // localStorage unavailable (e.g. private browsing): fall back to system preference
+  }
+
+  return window.matchMedia('(prefers-color-scheme: dark)').matches
+    ? 'dark'
+    : 'light';
+}
+
+function Layout({
+  children,
+  theme,
+  setTheme,
+}: {
+  children: ReactNode;
+  theme: Theme;
+  setTheme: Dispatch<SetStateAction<Theme>>;
+}) {
+  return (
+    <main className="app-shell">
+      <header className="app-header">
+        <Link className="brand" to="/movies" aria-label="CinéFlow, accueil">
+          <span className="brand-mark" aria-hidden="true">
+            ▶
+          </span>
+          <span>CinéFlow</span>
+        </Link>
+        <button
+          type="button"
+          className="theme-toggle"
+          onClick={() =>
+            setTheme((current) => (current === 'dark' ? 'light' : 'dark'))
+          }
+          aria-label={
+            theme === 'dark'
+              ? 'Activer le mode clair'
+              : 'Activer le mode sombre'
+          }
+        >
+          <span aria-hidden="true">{theme === 'dark' ? '☀️' : '🌙'}</span>
+        </button>
+      </header>
+      {children}
+    </main>
+  );
+}
+
 function MoviesPage() {
   const [movies, setMovies] = useState<Movie[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -30,9 +91,7 @@ function MoviesPage() {
   const page = queryParams.get('page') || DEFAULT_PAGE;
   const region = queryParams.get('region') || DEFAULT_REGION;
 
-  // useEffect hook to fetch data from an API when the component mounts
   useEffect(() => {
-    // fetch data from an API /api/movies/popular
     fetch(
       `/api/movies/popular?language=${language}&page=${page}&region=${region}`,
     )
@@ -49,13 +108,16 @@ function MoviesPage() {
 
   return (
     <>
-      <header className="app-header">
-        <h1>Films populaires</h1>
-        <h2>
-          Films tendances en France, d'après les données de{' '}
-          <b>The Movie Database</b>
-        </h2>
-      </header>
+      <section className="catalog-heading">
+        <p className="catalog-eyebrow">Le cinéma à portée de clic</p>
+        <div>
+          <h1>Films populaires</h1>
+          <h2>
+            Films tendances en France, d'après les données de{' '}
+            <b>The Movie Database</b>
+          </h2>
+        </div>
+      </section>
       <section>
         {error ? <p>{error}</p> : null}
         {movies ? (
@@ -81,7 +143,6 @@ function MovieDetailPage() {
   const [movie, setMovie] = useState<Movie | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // fetch the movie details from the back-end /api/movies/:id
   useEffect(() => {
     if (!id) return;
 
@@ -118,6 +179,7 @@ function MovieDetailPage() {
         />
       ) : null}
       <div className="movie-detail__content">
+        <p className="catalog-eyebrow">Fiche du film</p>
         <h1>{movie.title}</h1>
         <p className="movie-detail__meta">
           {movie.release_date.slice(0, 4)} · ★ {movie.vote_average.toFixed(1)}
@@ -134,25 +196,35 @@ function MovieDetailPage() {
 function NotFoundPage() {
   return (
     <section className="empty-state">
+      <p className="catalog-eyebrow">Erreur 404</p>
       <h1>Cette page n'existe pas</h1>
-      <Link className="back-link" to="/movies">
-        ← Retour aux films populaires
-      </Link>
+      <p>Retournez au catalogue pour découvrir les films populaires.</p>
     </section>
   );
 }
 
 export default function App() {
+  const [theme, setTheme] = useState<Theme>(getPreferredTheme);
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    try {
+      localStorage.setItem('theme', theme);
+    } catch {
+      // localStorage unavailable: theme choice just won't persist
+    }
+  }, [theme]);
+
   return (
     <BrowserRouter>
-      <main className="app-shell">
+      <Layout theme={theme} setTheme={setTheme}>
         <Routes>
           <Route path="/" element={<Navigate to="/movies" replace />} />
           <Route path="/movies" element={<MoviesPage />} />
           <Route path="/movies/:id" element={<MovieDetailPage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
-      </main>
+      </Layout>
     </BrowserRouter>
   );
 }

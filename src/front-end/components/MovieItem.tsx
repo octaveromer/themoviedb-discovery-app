@@ -14,20 +14,26 @@ export default function MovieItem({ movie }: MovieItemProps) {
 
   return (
     <Link className="movie-card" to={`/movies/${movie.id}`}>
-      {posterUrl ? (
-        <img
-          className="movie-poster"
-          src={posterUrl}
-          alt={`Affiche de ${movie.title}`}
-        />
-      ) : (
-        <div className="movie-poster" />
-      )}
+      <div className="movie-poster-wrap">
+        {posterUrl ? (
+          <img
+            className="movie-poster"
+            src={posterUrl}
+            alt={`Affiche de ${movie.title}`}
+          />
+        ) : (
+          <div className="movie-poster" />
+        )}
+        <span className="rating-badge">
+          <span className="rating-badge__star" aria-hidden="true">
+            ★
+          </span>
+          {rating}
+        </span>
+      </div>
       <div className="movie-card__content">
         <h2>{movie.title}</h2>
-        <p>
-          {releaseYear} · Note {rating}
-        </p>
+        <p>{releaseYear}</p>
       </div>
     </Link>
   );
