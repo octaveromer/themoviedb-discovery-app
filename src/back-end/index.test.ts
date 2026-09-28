@@ -15,4 +15,11 @@ describe('API routes', () => {
 
     expect(response.status).toBe(404);
   });
+
+  it('rejects invalid movie identifiers', async () => {
+    const response = await request(app).get('/api/movies/not-a-number');
+
+    expect(response.status).toBe(400);
+    expect(response.body.error).toContain('positive integer');
+  });
 });
