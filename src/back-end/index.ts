@@ -1,4 +1,5 @@
 import express from 'express';
+import healthRouter from './health-api';
 import { getTmdbAccessToken } from './config';
 import { tmdbHeaders, toSupportedMovie } from './utils';
 import { DEFAULT_LANGUAGE, DEFAULT_PAGE, DEFAULT_REGION } from './constants';
@@ -13,11 +14,8 @@ const app = express();
 // Define the port number for the server to listen on
 const port: number = 3000;
 
-// Define a route handler for health check endpoint
-app.get('/api/health', (_req: express.Request, res: express.Response) => {
-  const response: { status: string } = { status: 'ok' };
-  res.json(response);
-});
+// Register API routes from dedicated modules
+app.use('/api/health', healthRouter);
 
 // Define a route handler for fetching popular movies from TMDB API
 app.get(
