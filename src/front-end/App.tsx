@@ -1,14 +1,12 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useState } from 'react';
 import {
   BrowserRouter,
   Link,
   Navigate,
+  Outlet,
   Route,
   Routes,
-  useLocation,
-  useNavigate,
   useParams,
-  type Location,
 } from 'react-router';
 import type { Movie, MovieDetails } from '../back-end/schemas/MoviesTypes';
 import {
@@ -24,17 +22,39 @@ type MoviesApiResponse = {
   results: Movie[];
 };
 
-function MoviesPage() {
-  const [movies, setMovies] = useState<Movie[] | null>(null);
-  const [error, setError] = useState<string | null>(null);
+// Data already loaded, kept in memory while the application is open:
+// going back to a page shows it instantly without calling the API again.
+const moviesListCache = new Map<string, Movie[]>();
+const movieDetailsCache = new Map<string, MovieDetails>();
 
+// Scroll position of the movies list, restored when coming back from a movie
+let moviesListScrollY = 0;
+
+// Static part of the application: rendered once, only the <Outlet /> changes
+function Layout() {
+  return (
+    <main className="app-shell">
+      <Outlet />
+    </main>
+  );
+}
+
+function MoviesPage() {
   // read parameters from the URL query string
   const queryParams = new URLSearchParams(window.location.search);
   const language = queryParams.get('language') || DEFAULT_LANGUAGE;
   const page = queryParams.get('page') || DEFAULT_PAGE;
   const region = queryParams.get('region') || DEFAULT_REGION;
+  const cacheKey = `${language}-${page}-${region}`;
+
+  const [movies, setMovies] = useState<Movie[] | null>(
+    moviesListCache.get(cacheKey) ?? null,
+  );
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (moviesListCache.has(cacheKey)) return;
+
     fetch(
       `/api/movies/popular?language=${language}&page=${page}&region=${region}`,
     )
@@ -45,9 +65,23 @@ function MoviesPage() {
 
         return response.json() as Promise<MoviesApiResponse>;
       })
-      .then((data) => setMovies(data.results))
+      .then((data) => {
+        moviesListCache.set(cacheKey, data.results);
+        setMovies(data.results);
+      })
       .catch(() => setError('Impossible de charger les films populaires.'));
-  }, [language, page, region]);
+  }, [cacheKey, language, page, region]);
+
+  // restore the scroll position once the list is displayed, save it when leaving
+  useLayoutEffect(() => {
+    if (!movies) return;
+
+    window.scrollTo(0, moviesListScrollY);
+
+    return () => {
+      moviesListScrollY = window.scrollY;
+    };
+  }, [movies]);
 
   return (
     <>
@@ -80,14 +114,17 @@ function MoviesPage() {
   );
 }
 
-// Movie details already loaded, to reopen a movie without calling the API again
-const movieDetailsCache = new Map<string, MovieDetails>();
-
-function MovieDetailContent({ id }: { id: string | undefined }) {
+function MovieDetailPage() {
+  const { id } = useParams<{ id: string }>();
   const [movie, setMovie] = useState<MovieDetails | null>(
     id ? (movieDetailsCache.get(id) ?? null) : null,
   );
   const [error, setError] = useState<string | null>(null);
+
+  // show the top of the detail page
+  useLayoutEffect(() => {
+    window.scrollTo(0, 0);
+  }, [id]);
 
   // fetch the movie details from the back-end /api/movies/:id
   useEffect(() => {
@@ -107,82 +144,22 @@ function MovieDetailContent({ id }: { id: string | undefined }) {
       .catch(() => setError('Impossible de charger les détails du film.'));
   }, [id]);
 
-  if (!id || error) {
-    return <p className="status-message">{error ?? 'Film introuvable.'}</p>;
-  }
-
-  return movie ? (
-    <MovieDetailCard movie={movie} />
-  ) : (
-    <p className="status-message">Chargement du film...</p>
-  );
-}
-
-function MovieDetailHeader({ backLink }: { backLink: ReactNode }) {
-  return (
-    <header className="movie-detail-page__header">
-      <h1>Détails du film</h1>
-      {backLink}
-    </header>
-  );
-}
-
-// Full page, used when /movies/:id is opened directly (shared link, refresh)
-function MovieDetailPage() {
-  const { id } = useParams<{ id: string }>();
-
   return (
     <section className="movie-detail-page">
-      <MovieDetailHeader
-        backLink={
-          <Link className="back-link" to="/movies">
-            ← Retour vers les films populaires
-          </Link>
-        }
-      />
-      <MovieDetailContent key={id} id={id} />
+      <header className="movie-detail-page__header">
+        <h1>Détails du film</h1>
+        <Link className="back-link" to="/movies">
+          ← Retour vers les films populaires
+        </Link>
+      </header>
+      {!id || error ? (
+        <p className="status-message">{error ?? 'Film introuvable.'}</p>
+      ) : movie ? (
+        <MovieDetailCard movie={movie} />
+      ) : (
+        <p className="status-message">Chargement du film...</p>
+      )}
     </section>
-  );
-}
-
-// Panel opened on top of the movies list, which stays mounted in the background
-function MovieDetailModal() {
-  const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
-  const close = () => navigate(-1);
-
-  useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') navigate(-1);
-    };
-    document.addEventListener('keydown', onKeyDown);
-    document.body.style.overflow = 'hidden';
-
-    return () => {
-      document.removeEventListener('keydown', onKeyDown);
-      document.body.style.overflow = '';
-    };
-  }, [navigate]);
-
-  return (
-    <div className="movie-detail-overlay" onClick={close}>
-      <section
-        className="movie-detail-page movie-detail-dialog"
-        role="dialog"
-        aria-modal="true"
-        aria-label="Détails du film"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <MovieDetailHeader
-          backLink={
-            <button type="button" className="back-link" onClick={close}>
-              ← Retour vers les films populaires
-            </button>
-          }
-        />
-        <MovieDetailContent key={id} id={id} />
-      </section>
-    </div>
   );
 }
 
@@ -196,34 +173,17 @@ function NotFoundPage() {
   );
 }
 
-function AppRoutes() {
-  const location = useLocation();
-  const state = location.state as { backgroundLocation?: Location } | null;
-  const backgroundLocation = state?.backgroundLocation;
-
-  return (
-    <>
-      <Routes location={backgroundLocation ?? location}>
-        <Route path="/" element={<Navigate to="/movies" replace />} />
-        <Route path="/movies" element={<MoviesPage />} />
-        <Route path="/movies/:id" element={<MovieDetailPage />} />
-        <Route path="*" element={<NotFoundPage />} />
-      </Routes>
-      {backgroundLocation ? (
-        <Routes>
-          <Route path="/movies/:id" element={<MovieDetailModal />} />
-        </Routes>
-      ) : null}
-    </>
-  );
-}
-
 export default function App() {
   return (
     <BrowserRouter>
-      <main className="app-shell">
-        <AppRoutes />
-      </main>
+      <Routes>
+        <Route element={<Layout />}>
+          <Route path="/" element={<Navigate to="/movies" replace />} />
+          <Route path="/movies" element={<MoviesPage />} />
+          <Route path="/movies/:id" element={<MovieDetailPage />} />
+          <Route path="*" element={<NotFoundPage />} />
+        </Route>
+      </Routes>
     </BrowserRouter>
   );
 }
