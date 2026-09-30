@@ -13,12 +13,13 @@ import {
   Routes,
   useParams,
 } from 'react-router';
-import type { Movie } from '../back-end/schemas/MoviesTypes';
+import type { Movie, MovieDetails } from '../back-end/schemas/MoviesTypes';
 import {
   DEFAULT_LANGUAGE,
   DEFAULT_PAGE,
   DEFAULT_REGION,
 } from '../back-end/constants';
+import MovieDetailCard from './components/MovieDetailCard';
 import MovieItem from './components/MovieItem';
 import './app.css';
 
@@ -139,10 +140,11 @@ function MoviesPage() {
 }
 
 function MovieDetailPage() {
-  const { id } = useParams();
-  const [movie, setMovie] = useState<Movie | null>(null);
+  const { id } = useParams<{ id: string }>();
+  const [movie, setMovie] = useState<MovieDetails | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // fetch the movie details from the back-end /api/movies/:id
   useEffect(() => {
     if (!id) return;
 
@@ -151,45 +153,28 @@ function MovieDetailPage() {
         if (!response.ok) {
           throw new Error('Film introuvable.');
         }
-        return response.json() as Promise<Movie>;
+        return response.json() as Promise<MovieDetails>;
       })
       .then(setMovie)
       .catch(() => setError('Impossible de charger les détails du film.'));
   }, [id]);
 
-  if (!id || error) {
-    return <p className="status-message">{error ?? 'Film introuvable.'}</p>;
-  }
-
-  if (!movie) {
-    return <p className="status-message">Chargement du film...</p>;
-  }
-
-  const posterUrl = movie.poster_path
-    ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
-    : null;
-
   return (
-    <article className="movie-detail">
-      {posterUrl ? (
-        <img
-          className="movie-detail__poster"
-          src={posterUrl}
-          alt={`Affiche de ${movie.title}`}
-        />
-      ) : null}
-      <div className="movie-detail__content">
-        <p className="catalog-eyebrow">Fiche du film</p>
-        <h1>{movie.title}</h1>
-        <p className="movie-detail__meta">
-          {movie.release_date.slice(0, 4)} · ★ {movie.vote_average.toFixed(1)}
-        </p>
-        <p>{movie.overview || 'Aucun synopsis disponible.'}</p>
+    <section className="movie-detail-page">
+      <header className="movie-detail-page__header">
+        <h1>Détails du film</h1>
         <Link className="back-link" to="/movies">
-          ← Retour aux films populaires
+          ← Retour vers les films populaires
         </Link>
-      </div>
-    </article>
+      </header>
+      {!id || error ? (
+        <p className="status-message">{error ?? 'Film introuvable.'}</p>
+      ) : movie ? (
+        <MovieDetailCard movie={movie} />
+      ) : (
+        <p className="status-message">Chargement du film...</p>
+      )}
+    </section>
   );
 }
 
