@@ -4,16 +4,6 @@
   padding: 1.5rem 1.5rem 4rem;
 }
 
-.app-header {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  align-items: center;
-  gap: 1rem;
-  margin-bottom: 3.5rem;
-  padding: 0.75rem 0;
-  border-bottom: 1px solid var(--color-border);
-}
-
 .catalog-heading {
   margin-bottom: 2rem;
 }
@@ -41,30 +31,6 @@
   font-weight: 400;
   color: var(--color-text-muted);
   line-height: 1.6;
-}
-
-.theme-toggle {
-  flex-shrink: 0;
-  display: grid;
-  place-items: center;
-  width: 2.75rem;
-  height: 2.75rem;
-  border-radius: 0.75rem;
-  border: 1px solid var(--color-border);
-  background-color: var(--color-bg-elevated);
-  color: var(--color-text);
-  font-size: 1.2rem;
-  cursor: pointer;
-  transition:
-    transform 0.15s ease,
-    border-color 0.15s ease,
-    box-shadow 0.15s ease;
-}
-
-.theme-toggle:hover {
-  border-color: var(--color-accent);
-  transform: scale(1.05);
-  box-shadow: 0 4px 12px rgba(111, 66, 193, 0.14);
 }
 
 .status-message {
@@ -193,10 +159,6 @@
 @media (max-width: 520px) {
   .app-shell {
     padding-inline: 1rem;
-  }
-
-  .app-header {
-    margin-bottom: 2.75rem;
   }
 
   .movie-grid {

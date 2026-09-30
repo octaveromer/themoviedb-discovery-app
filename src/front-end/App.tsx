@@ -1,10 +1,4 @@
-import {
-  useEffect,
-  useState,
-  type Dispatch,
-  type ReactNode,
-  type SetStateAction,
-} from 'react';
+import { useEffect, useState } from 'react';
 import {
   BrowserRouter,
   Link,
@@ -26,55 +20,6 @@ import './app.css';
 type MoviesApiResponse = {
   results: Movie[];
 };
-
-type Theme = 'light' | 'dark';
-
-function getPreferredTheme(): Theme {
-  try {
-    const saved = localStorage.getItem('theme');
-    if (saved === 'light' || saved === 'dark') {
-      return saved;
-    }
-  } catch {
-    // localStorage unavailable (e.g. private browsing): fall back to system preference
-  }
-
-  return window.matchMedia('(prefers-color-scheme: dark)').matches
-    ? 'dark'
-    : 'light';
-}
-
-function Layout({
-  children,
-  theme,
-  setTheme,
-}: {
-  children: ReactNode;
-  theme: Theme;
-  setTheme: Dispatch<SetStateAction<Theme>>;
-}) {
-  return (
-    <main className="app-shell">
-      <header className="app-header">
-        <button
-          type="button"
-          className="theme-toggle"
-          onClick={() =>
-            setTheme((current) => (current === 'dark' ? 'light' : 'dark'))
-          }
-          aria-label={
-            theme === 'dark'
-              ? 'Activer le mode clair'
-              : 'Activer le mode sombre'
-          }
-        >
-          <span aria-hidden="true">{theme === 'dark' ? '☀️' : '🌙'}</span>
-        </button>
-      </header>
-      {children}
-    </main>
-  );
-}
 
 function MoviesPage() {
   const [movies, setMovies] = useState<Movie[] | null>(null);
@@ -182,27 +127,16 @@ function NotFoundPage() {
 }
 
 export default function App() {
-  const [theme, setTheme] = useState<Theme>(getPreferredTheme);
-
-  useEffect(() => {
-    document.documentElement.dataset.theme = theme;
-    try {
-      localStorage.setItem('theme', theme);
-    } catch {
-      // localStorage unavailable: theme choice just won't persist
-    }
-  }, [theme]);
-
   return (
     <BrowserRouter>
-      <Layout theme={theme} setTheme={setTheme}>
+      <main className="app-shell">
         <Routes>
           <Route path="/" element={<Navigate to="/movies" replace />} />
           <Route path="/movies" element={<MoviesPage />} />
           <Route path="/movies/:id" element={<MovieDetailPage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
-      </Layout>
+      </main>
     </BrowserRouter>
   );
 }
