@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useState } from 'react';
 import {
   BrowserRouter,
   Link,
   Navigate,
+  Outlet,
   Route,
   Routes,
   useParams,
@@ -21,17 +22,39 @@ type MoviesApiResponse = {
   results: Movie[];
 };
 
-function MoviesPage() {
-  const [movies, setMovies] = useState<Movie[] | null>(null);
-  const [error, setError] = useState<string | null>(null);
+// Data already loaded, kept in memory while the application is open:
+// going back to a page shows it instantly without calling the API again.
+const moviesListCache = new Map<string, Movie[]>();
+const movieDetailsCache = new Map<string, MovieDetails>();
 
+// Scroll position of the movies list, restored when coming back from a movie
+let moviesListScrollY = 0;
+
+// Static part of the application: rendered once, only the <Outlet /> changes
+function Layout() {
+  return (
+    <main className="app-shell">
+      <Outlet />
+    </main>
+  );
+}
+
+function MoviesPage() {
   // read parameters from the URL query string
   const queryParams = new URLSearchParams(window.location.search);
   const language = queryParams.get('language') || DEFAULT_LANGUAGE;
   const page = queryParams.get('page') || DEFAULT_PAGE;
   const region = queryParams.get('region') || DEFAULT_REGION;
+  const cacheKey = `${language}-${page}-${region}`;
+
+  const [movies, setMovies] = useState<Movie[] | null>(
+    moviesListCache.get(cacheKey) ?? null,
+  );
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (moviesListCache.has(cacheKey)) return;
+
     fetch(
       `/api/movies/popular?language=${language}&page=${page}&region=${region}`,
     )
@@ -42,9 +65,23 @@ function MoviesPage() {
 
         return response.json() as Promise<MoviesApiResponse>;
       })
-      .then((data) => setMovies(data.results))
+      .then((data) => {
+        moviesListCache.set(cacheKey, data.results);
+        setMovies(data.results);
+      })
       .catch(() => setError('Impossible de charger les films populaires.'));
-  }, [language, page, region]);
+  }, [cacheKey, language, page, region]);
+
+  // restore the scroll position once the list is displayed, save it when leaving
+  useLayoutEffect(() => {
+    if (!movies) return;
+
+    window.scrollTo(0, moviesListScrollY);
+
+    return () => {
+      moviesListScrollY = window.scrollY;
+    };
+  }, [movies]);
 
   return (
     <>
@@ -79,12 +116,19 @@ function MoviesPage() {
 
 function MovieDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const [movie, setMovie] = useState<MovieDetails | null>(null);
+  const [movie, setMovie] = useState<MovieDetails | null>(
+    id ? (movieDetailsCache.get(id) ?? null) : null,
+  );
   const [error, setError] = useState<string | null>(null);
+
+  // show the top of the detail page
+  useLayoutEffect(() => {
+    window.scrollTo(0, 0);
+  }, [id]);
 
   // fetch the movie details from the back-end /api/movies/:id
   useEffect(() => {
-    if (!id) return;
+    if (!id || movieDetailsCache.has(id)) return;
 
     fetch(`/api/movies/${id}`)
       .then((response) => {
@@ -93,7 +137,10 @@ function MovieDetailPage() {
         }
         return response.json() as Promise<MovieDetails>;
       })
-      .then(setMovie)
+      .then((data) => {
+        movieDetailsCache.set(id, data);
+        setMovie(data);
+      })
       .catch(() => setError('Impossible de charger les détails du film.'));
   }, [id]);
 
@@ -129,14 +176,14 @@ function NotFoundPage() {
 export default function App() {
   return (
     <BrowserRouter>
-      <main className="app-shell">
-        <Routes>
+      <Routes>
+        <Route element={<Layout />}>
           <Route path="/" element={<Navigate to="/movies" replace />} />
           <Route path="/movies" element={<MoviesPage />} />
           <Route path="/movies/:id" element={<MovieDetailPage />} />
           <Route path="*" element={<NotFoundPage />} />
-        </Routes>
-      </main>
+        </Route>
+      </Routes>
     </BrowserRouter>
   );
 }
