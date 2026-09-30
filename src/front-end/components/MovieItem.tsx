@@ -1,5 +1,5 @@
 import type { Movie } from '../../back-end/schemas/MoviesTypes';
-import { Link } from 'react-router';
+import { Link, useLocation } from 'react-router';
 
 type MovieItemProps = {
   movie: Movie;
@@ -11,9 +11,15 @@ export default function MovieItem({ movie }: MovieItemProps) {
     ? `https://image.tmdb.org/t/p/w185${movie.poster_path}`
     : null;
   const rating = movie.vote_average.toFixed(1);
+  // keep the current page as background so the detail opens on top of it
+  const location = useLocation();
 
   return (
-    <Link className="movie-card" to={`/movies/${movie.id}`}>
+    <Link
+      className="movie-card"
+      to={`/movies/${movie.id}`}
+      state={{ backgroundLocation: location }}
+    >
       <div className="movie-poster-wrap">
         {posterUrl ? (
           <img
