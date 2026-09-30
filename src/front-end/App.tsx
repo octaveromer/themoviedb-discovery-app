@@ -56,12 +56,6 @@ function Layout({
   return (
     <main className="app-shell">
       <header className="app-header">
-        <Link className="brand" to="/movies" aria-label="CinéFlow, accueil">
-          <span className="brand-mark" aria-hidden="true">
-            ▶
-          </span>
-          <span>CinéFlow</span>
-        </Link>
         <button
           type="button"
           className="theme-toggle"
@@ -110,7 +104,6 @@ function MoviesPage() {
   return (
     <>
       <section className="catalog-heading">
-        <p className="catalog-eyebrow">Le cinéma à portée de clic</p>
         <div>
           <h1>Films populaires</h1>
           <h2>
