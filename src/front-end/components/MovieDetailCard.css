@@ -39,7 +39,7 @@
     600 12px/1.4 'Avenir Next',
     'Trebuchet MS',
     sans-serif;
-  color: var(--color-accent-secondary);
+  color: #2a6f77;
 }
 
 .movie-detail-copy h1 {
@@ -56,7 +56,7 @@
   margin: 0 0 16px;
   font-size: 20px;
   line-height: 1.4;
-  color: var(--color-text-muted);
+  color: #56627a;
 }
 
 .movie-detail-meta {
@@ -80,7 +80,7 @@
 .movie-detail-genres li {
   padding: 8px 12px;
   border-radius: 999px;
-  background: var(--color-bg);
+  background: #ffffffb8;
   border: 1px solid var(--color-border);
   font:
     600 13px/1 'Avenir Next',
