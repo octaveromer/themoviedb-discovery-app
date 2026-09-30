@@ -1,10 +1,4 @@
-import {
-  useEffect,
-  useState,
-  type Dispatch,
-  type ReactNode,
-  type SetStateAction,
-} from 'react';
+import { useEffect, useState } from 'react';
 import {
   BrowserRouter,
   Link,
@@ -13,73 +7,19 @@ import {
   Routes,
   useParams,
 } from 'react-router';
-import type { Movie } from '../back-end/schemas/MoviesTypes';
+import type { Movie, MovieDetails } from '../back-end/schemas/MoviesTypes';
 import {
   DEFAULT_LANGUAGE,
   DEFAULT_PAGE,
   DEFAULT_REGION,
 } from '../back-end/constants';
+import MovieDetailCard from './components/MovieDetailCard';
 import MovieItem from './components/MovieItem';
 import './app.css';
 
 type MoviesApiResponse = {
   results: Movie[];
 };
-
-type Theme = 'light' | 'dark';
-
-function getPreferredTheme(): Theme {
-  try {
-    const saved = localStorage.getItem('theme');
-    if (saved === 'light' || saved === 'dark') {
-      return saved;
-    }
-  } catch {
-    // localStorage unavailable (e.g. private browsing): fall back to system preference
-  }
-
-  return window.matchMedia('(prefers-color-scheme: dark)').matches
-    ? 'dark'
-    : 'light';
-}
-
-function Layout({
-  children,
-  theme,
-  setTheme,
-}: {
-  children: ReactNode;
-  theme: Theme;
-  setTheme: Dispatch<SetStateAction<Theme>>;
-}) {
-  return (
-    <main className="app-shell">
-      <header className="app-header">
-        <Link className="brand" to="/movies" aria-label="CinéFlow, accueil">
-          <span className="brand-mark" aria-hidden="true">
-            ▶
-          </span>
-          <span>CinéFlow</span>
-        </Link>
-        <button
-          type="button"
-          className="theme-toggle"
-          onClick={() =>
-            setTheme((current) => (current === 'dark' ? 'light' : 'dark'))
-          }
-          aria-label={
-            theme === 'dark'
-              ? 'Activer le mode clair'
-              : 'Activer le mode sombre'
-          }
-        >
-          <span aria-hidden="true">{theme === 'dark' ? '☀️' : '🌙'}</span>
-        </button>
-      </header>
-      {children}
-    </main>
-  );
-}
 
 function MoviesPage() {
   const [movies, setMovies] = useState<Movie[] | null>(null);
@@ -109,7 +49,6 @@ function MoviesPage() {
   return (
     <>
       <section className="catalog-heading">
-        <p className="catalog-eyebrow">Le cinéma à portée de clic</p>
         <div>
           <h1>Films populaires</h1>
           <h2>
@@ -139,10 +78,11 @@ function MoviesPage() {
 }
 
 function MovieDetailPage() {
-  const { id } = useParams();
-  const [movie, setMovie] = useState<Movie | null>(null);
+  const { id } = useParams<{ id: string }>();
+  const [movie, setMovie] = useState<MovieDetails | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // fetch the movie details from the back-end /api/movies/:id
   useEffect(() => {
     if (!id) return;
 
@@ -151,45 +91,28 @@ function MovieDetailPage() {
         if (!response.ok) {
           throw new Error('Film introuvable.');
         }
-        return response.json() as Promise<Movie>;
+        return response.json() as Promise<MovieDetails>;
       })
       .then(setMovie)
       .catch(() => setError('Impossible de charger les détails du film.'));
   }, [id]);
 
-  if (!id || error) {
-    return <p className="status-message">{error ?? 'Film introuvable.'}</p>;
-  }
-
-  if (!movie) {
-    return <p className="status-message">Chargement du film...</p>;
-  }
-
-  const posterUrl = movie.poster_path
-    ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
-    : null;
-
   return (
-    <article className="movie-detail">
-      {posterUrl ? (
-        <img
-          className="movie-detail__poster"
-          src={posterUrl}
-          alt={`Affiche de ${movie.title}`}
-        />
-      ) : null}
-      <div className="movie-detail__content">
-        <p className="catalog-eyebrow">Fiche du film</p>
-        <h1>{movie.title}</h1>
-        <p className="movie-detail__meta">
-          {movie.release_date.slice(0, 4)} · ★ {movie.vote_average.toFixed(1)}
-        </p>
-        <p>{movie.overview || 'Aucun synopsis disponible.'}</p>
+    <section className="movie-detail-page">
+      <header className="movie-detail-page__header">
+        <h1>Détails du film</h1>
         <Link className="back-link" to="/movies">
-          ← Retour aux films populaires
+          ← Retour vers les films populaires
         </Link>
-      </div>
-    </article>
+      </header>
+      {!id || error ? (
+        <p className="status-message">{error ?? 'Film introuvable.'}</p>
+      ) : movie ? (
+        <MovieDetailCard movie={movie} />
+      ) : (
+        <p className="status-message">Chargement du film...</p>
+      )}
+    </section>
   );
 }
 
@@ -204,27 +127,16 @@ function NotFoundPage() {
 }
 
 export default function App() {
-  const [theme, setTheme] = useState<Theme>(getPreferredTheme);
-
-  useEffect(() => {
-    document.documentElement.dataset.theme = theme;
-    try {
-      localStorage.setItem('theme', theme);
-    } catch {
-      // localStorage unavailable: theme choice just won't persist
-    }
-  }, [theme]);
-
   return (
     <BrowserRouter>
-      <Layout theme={theme} setTheme={setTheme}>
+      <main className="app-shell">
         <Routes>
           <Route path="/" element={<Navigate to="/movies" replace />} />
           <Route path="/movies" element={<MoviesPage />} />
           <Route path="/movies/:id" element={<MovieDetailPage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
-      </Layout>
+      </main>
     </BrowserRouter>
   );
 }

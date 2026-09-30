@@ -7,7 +7,11 @@ import type {
   TmdbMovieDetails,
   TmdbMoviesRawResponse,
 } from './schemas/MoviesTypes';
-import { tmdbHeaders, toSupportedMovie } from './utils';
+import {
+  tmdbHeaders,
+  toSupportedMovie,
+  toSupportedMovieDetails,
+} from './utils';
 
 const moviesRouter: Router = express.Router();
 
@@ -84,7 +88,7 @@ moviesRouter.get(
       }
 
       const movie = (await tmdbResponse.json()) as TmdbMovieDetails;
-      response.json({ ...toSupportedMovie(movie), ...movie });
+      response.json(toSupportedMovieDetails(movie));
     } catch (error) {
       console.error('Error fetching movie details:', error);
       response.status(500).json({ error: 'Failed to fetch movie details' });
