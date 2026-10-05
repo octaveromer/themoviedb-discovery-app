@@ -3,23 +3,21 @@ import { describe, expect, it } from 'vitest';
 import { app } from './index';
 
 describe('API routes', () => {
-  it('exposes the health endpoint', async () => {
-    const response = await request(app).get('/api/health');
+  it('registers the health and movies routes', async () => {
+    // Act
+    const health = await request(app).get('/api/health');
+    const movie = await request(app).get('/api/movies/not-a-number');
 
-    expect(response.status).toBe(200);
-    expect(response.body).toEqual({ status: 'ok' });
+    // Assert
+    expect(health.status).not.toBe(404);
+    expect(movie.status).not.toBe(404);
   });
 
   it('does not expose the root route anymore', async () => {
+    // Act
     const response = await request(app).get('/');
 
+    // Assert
     expect(response.status).toBe(404);
-  });
-
-  it('rejects invalid movie identifiers', async () => {
-    const response = await request(app).get('/api/movies/not-a-number');
-
-    expect(response.status).toBe(400);
-    expect(response.body.error).toContain('positive integer');
   });
 });

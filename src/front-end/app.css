@@ -4,42 +4,6 @@
   padding: 1.5rem 1.5rem 4rem;
 }
 
-.app-header {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  align-items: center;
-  gap: 1rem;
-  margin-bottom: 3.5rem;
-  padding: 0.75rem 0;
-  border-bottom: 1px solid var(--color-border);
-}
-
-.brand {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.65rem;
-  color: var(--color-text);
-  font-size: 1.1rem;
-  font-weight: 800;
-  letter-spacing: -0.03em;
-}
-
-.brand-mark {
-  display: grid;
-  place-items: center;
-  width: 2rem;
-  height: 2rem;
-  border-radius: 0.65rem;
-  background: linear-gradient(
-    135deg,
-    var(--color-accent-secondary),
-    var(--color-accent)
-  );
-  color: #fff;
-  font-size: 0.85rem;
-  box-shadow: 0 5px 12px rgba(111, 66, 193, 0.18);
-}
-
 .catalog-heading {
   margin-bottom: 2rem;
 }
@@ -69,30 +33,6 @@
   line-height: 1.6;
 }
 
-.theme-toggle {
-  flex-shrink: 0;
-  display: grid;
-  place-items: center;
-  width: 2.75rem;
-  height: 2.75rem;
-  border-radius: 0.75rem;
-  border: 1px solid var(--color-border);
-  background-color: var(--color-bg-elevated);
-  color: var(--color-text);
-  font-size: 1.2rem;
-  cursor: pointer;
-  transition:
-    transform 0.15s ease,
-    border-color 0.15s ease,
-    box-shadow 0.15s ease;
-}
-
-.theme-toggle:hover {
-  border-color: var(--color-accent);
-  transform: scale(1.05);
-  box-shadow: 0 4px 12px rgba(111, 66, 193, 0.14);
-}
-
 .status-message {
   color: var(--color-text-muted);
 }
@@ -116,8 +56,7 @@
     box-shadow 0.2s ease;
 }
 
-.movie-card,
-.brand {
+.movie-card {
   text-decoration: none;
 }
 
@@ -178,41 +117,31 @@
   color: var(--color-text-muted);
 }
 
-.movie-detail {
-  display: grid;
-  grid-template-columns: minmax(220px, 320px) 1fr;
-  gap: 2.5rem;
-  align-items: start;
-  max-width: 900px;
-  margin: 1rem auto 0;
-}
-
-.movie-detail__poster {
-  width: 100%;
-  border-radius: 1rem;
-  box-shadow: var(--shadow-card-hover);
-}
-
-.movie-detail__content {
-  padding-top: 1rem;
-}
-
-.movie-detail__content h1,
+.movie-detail-page__header h1,
 .empty-state h1 {
   margin: 0 0 0.75rem;
   font-size: clamp(1.8rem, 1.4rem + 1.5vw, 2.75rem);
   letter-spacing: -0.04em;
 }
 
-.movie-detail__content > p:not(.catalog-eyebrow):not(.movie-detail__meta),
 .empty-state p:not(.catalog-eyebrow) {
   color: var(--color-text-muted);
   line-height: 1.7;
 }
 
-.movie-detail__meta {
-  color: var(--color-accent-secondary);
-  font-weight: 700;
+.movie-detail-page {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.movie-detail-page__header {
+  margin-bottom: 1.75rem;
+}
+
+.movie-detail-page__header .back-link {
+  margin-top: 0;
+  font-weight: 500;
+  text-decoration: underline;
 }
 
 .back-link {
@@ -232,21 +161,8 @@
     padding-inline: 1rem;
   }
 
-  .app-header {
-    margin-bottom: 2.75rem;
-  }
-
   .movie-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 0.9rem;
-  }
-
-  .movie-detail {
-    grid-template-columns: 1fr;
-    gap: 1rem;
-  }
-
-  .movie-detail__poster {
-    max-width: 240px;
   }
 }

@@ -1,97 +1,67 @@
-import {
-  useEffect,
-  useState,
-  type Dispatch,
-  type ReactNode,
-  type SetStateAction,
-} from 'react';
+import { useEffect, useLayoutEffect, useState } from 'react';
 import {
   BrowserRouter,
   Link,
   Navigate,
+  Outlet,
   Route,
   Routes,
   useParams,
 } from 'react-router';
-import type { Movie } from '../back-end/schemas/MoviesTypes';
+import type { Movie, MovieDetails } from '../back-end/schemas/MoviesTypes';
 import {
   DEFAULT_LANGUAGE,
   DEFAULT_PAGE,
   DEFAULT_REGION,
 } from '../back-end/constants';
+import MovieDetailCard from './components/MovieDetailCard';
+import Footer from './components/Footer';
 import MovieItem from './components/MovieItem';
+import NavBar from './components/NavBar';
+import AboutPage from './pages/AboutPage';
 import './app.css';
 
 type MoviesApiResponse = {
   results: Movie[];
 };
 
-type Theme = 'light' | 'dark';
+// Data already loaded, kept in memory while the application is open:
+// going back to a page shows it instantly without calling the API again.
+const moviesListCache = new Map<string, Movie[]>();
+const movieDetailsCache = new Map<string, MovieDetails>();
 
-function getPreferredTheme(): Theme {
-  try {
-    const saved = localStorage.getItem('theme');
-    if (saved === 'light' || saved === 'dark') {
-      return saved;
-    }
-  } catch {
-    // localStorage unavailable (e.g. private browsing): fall back to system preference
-  }
+// Scroll position of the movies list, restored when coming back from a movie
+let moviesListScrollY = 0;
 
-  return window.matchMedia('(prefers-color-scheme: dark)').matches
-    ? 'dark'
-    : 'light';
-}
-
-function Layout({
-  children,
-  theme,
-  setTheme,
-}: {
-  children: ReactNode;
-  theme: Theme;
-  setTheme: Dispatch<SetStateAction<Theme>>;
-}) {
+// Static part of the application: rendered once, only the <Outlet /> changes
+function Layout() {
   return (
-    <main className="app-shell">
-      <header className="app-header">
-        <Link className="brand" to="/movies" aria-label="CinéFlow, accueil">
-          <span className="brand-mark" aria-hidden="true">
-            ▶
-          </span>
-          <span>CinéFlow</span>
-        </Link>
-        <button
-          type="button"
-          className="theme-toggle"
-          onClick={() =>
-            setTheme((current) => (current === 'dark' ? 'light' : 'dark'))
-          }
-          aria-label={
-            theme === 'dark'
-              ? 'Activer le mode clair'
-              : 'Activer le mode sombre'
-          }
-        >
-          <span aria-hidden="true">{theme === 'dark' ? '☀️' : '🌙'}</span>
-        </button>
-      </header>
-      {children}
-    </main>
+    <>
+      <NavBar />
+      <main className="app-shell">
+        <Outlet />
+      </main>
+      <Footer />
+    </>
   );
 }
 
 function MoviesPage() {
-  const [movies, setMovies] = useState<Movie[] | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
   // read parameters from the URL query string
   const queryParams = new URLSearchParams(window.location.search);
   const language = queryParams.get('language') || DEFAULT_LANGUAGE;
   const page = queryParams.get('page') || DEFAULT_PAGE;
   const region = queryParams.get('region') || DEFAULT_REGION;
+  const cacheKey = `${language}-${page}-${region}`;
+
+  const [movies, setMovies] = useState<Movie[] | null>(
+    moviesListCache.get(cacheKey) ?? null,
+  );
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (moviesListCache.has(cacheKey)) return;
+
     fetch(
       `/api/movies/popular?language=${language}&page=${page}&region=${region}`,
     )
@@ -102,14 +72,27 @@ function MoviesPage() {
 
         return response.json() as Promise<MoviesApiResponse>;
       })
-      .then((data) => setMovies(data.results))
+      .then((data) => {
+        moviesListCache.set(cacheKey, data.results);
+        setMovies(data.results);
+      })
       .catch(() => setError('Impossible de charger les films populaires.'));
-  }, [language, page, region]);
+  }, [cacheKey, language, page, region]);
+
+  // restore the scroll position once the list is displayed, save it when leaving
+  useLayoutEffect(() => {
+    if (!movies) return;
+
+    window.scrollTo(0, moviesListScrollY);
+
+    return () => {
+      moviesListScrollY = window.scrollY;
+    };
+  }, [movies]);
 
   return (
     <>
       <section className="catalog-heading">
-        <p className="catalog-eyebrow">Le cinéma à portée de clic</p>
         <div>
           <h1>Films populaires</h1>
           <h2>
@@ -139,57 +122,51 @@ function MoviesPage() {
 }
 
 function MovieDetailPage() {
-  const { id } = useParams();
-  const [movie, setMovie] = useState<Movie | null>(null);
+  const { id } = useParams<{ id: string }>();
+  const [movie, setMovie] = useState<MovieDetails | null>(
+    id ? (movieDetailsCache.get(id) ?? null) : null,
+  );
   const [error, setError] = useState<string | null>(null);
 
+  // show the top of the detail page
+  useLayoutEffect(() => {
+    window.scrollTo(0, 0);
+  }, [id]);
+
+  // fetch the movie details from the back-end /api/movies/:id
   useEffect(() => {
-    if (!id) return;
+    if (!id || movieDetailsCache.has(id)) return;
 
     fetch(`/api/movies/${id}`)
       .then((response) => {
         if (!response.ok) {
           throw new Error('Film introuvable.');
         }
-        return response.json() as Promise<Movie>;
+        return response.json() as Promise<MovieDetails>;
       })
-      .then(setMovie)
+      .then((data) => {
+        movieDetailsCache.set(id, data);
+        setMovie(data);
+      })
       .catch(() => setError('Impossible de charger les détails du film.'));
   }, [id]);
 
-  if (!id || error) {
-    return <p className="status-message">{error ?? 'Film introuvable.'}</p>;
-  }
-
-  if (!movie) {
-    return <p className="status-message">Chargement du film...</p>;
-  }
-
-  const posterUrl = movie.poster_path
-    ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
-    : null;
-
   return (
-    <article className="movie-detail">
-      {posterUrl ? (
-        <img
-          className="movie-detail__poster"
-          src={posterUrl}
-          alt={`Affiche de ${movie.title}`}
-        />
-      ) : null}
-      <div className="movie-detail__content">
-        <p className="catalog-eyebrow">Fiche du film</p>
-        <h1>{movie.title}</h1>
-        <p className="movie-detail__meta">
-          {movie.release_date.slice(0, 4)} · ★ {movie.vote_average.toFixed(1)}
-        </p>
-        <p>{movie.overview || 'Aucun synopsis disponible.'}</p>
+    <section className="movie-detail-page">
+      <header className="movie-detail-page__header">
+        <h1>Détails du film</h1>
         <Link className="back-link" to="/movies">
-          ← Retour aux films populaires
+          ← Retour vers les films populaires
         </Link>
-      </div>
-    </article>
+      </header>
+      {!id || error ? (
+        <p className="status-message">{error ?? 'Film introuvable.'}</p>
+      ) : movie ? (
+        <MovieDetailCard movie={movie} />
+      ) : (
+        <p className="status-message">Chargement du film...</p>
+      )}
+    </section>
   );
 }
 
@@ -204,27 +181,17 @@ function NotFoundPage() {
 }
 
 export default function App() {
-  const [theme, setTheme] = useState<Theme>(getPreferredTheme);
-
-  useEffect(() => {
-    document.documentElement.dataset.theme = theme;
-    try {
-      localStorage.setItem('theme', theme);
-    } catch {
-      // localStorage unavailable: theme choice just won't persist
-    }
-  }, [theme]);
-
   return (
     <BrowserRouter>
-      <Layout theme={theme} setTheme={setTheme}>
-        <Routes>
+      <Routes>
+        <Route element={<Layout />}>
           <Route path="/" element={<Navigate to="/movies" replace />} />
           <Route path="/movies" element={<MoviesPage />} />
           <Route path="/movies/:id" element={<MovieDetailPage />} />
+          <Route path="/about" element={<AboutPage />} />
           <Route path="*" element={<NotFoundPage />} />
-        </Routes>
-      </Layout>
+        </Route>
+      </Routes>
     </BrowserRouter>
   );
 }
