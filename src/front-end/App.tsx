@@ -16,6 +16,7 @@ import {
 } from '../back-end/constants';
 import MovieDetailCard from './components/MovieDetailCard';
 import MovieItem from './components/MovieItem';
+import NavBar from './components/NavBar';
 import AboutPage from './pages/AboutPage';
 import './app.css';
 
@@ -34,9 +35,12 @@ let moviesListScrollY = 0;
 // Static part of the application: rendered once, only the <Outlet /> changes
 function Layout() {
   return (
-    <main className="app-shell">
-      <Outlet />
-    </main>
+    <>
+      <NavBar />
+      <main className="app-shell">
+        <Outlet />
+      </main>
+    </>
   );
 }
 
