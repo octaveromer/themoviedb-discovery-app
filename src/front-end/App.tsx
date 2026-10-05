@@ -16,6 +16,7 @@ import {
 } from '../back-end/constants';
 import MovieDetailCard from './components/MovieDetailCard';
 import MovieItem from './components/MovieItem';
+import AboutPage from './pages/AboutPage';
 import './app.css';
 
 type MoviesApiResponse = {
@@ -181,6 +182,7 @@ export default function App() {
           <Route path="/" element={<Navigate to="/movies" replace />} />
           <Route path="/movies" element={<MoviesPage />} />
           <Route path="/movies/:id" element={<MovieDetailPage />} />
+          <Route path="/about" element={<AboutPage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Route>
       </Routes>
