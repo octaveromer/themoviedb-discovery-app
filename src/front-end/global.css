@@ -46,6 +46,13 @@ body {
   color: var(--color-text);
 }
 
+/* keep the footer at the bottom of the window on short pages */
+#root {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
 img {
   max-width: 100%;
   display: block;

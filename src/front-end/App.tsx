@@ -15,6 +15,7 @@ import {
   DEFAULT_REGION,
 } from '../back-end/constants';
 import MovieDetailCard from './components/MovieDetailCard';
+import Footer from './components/Footer';
 import MovieItem from './components/MovieItem';
 import NavBar from './components/NavBar';
 import AboutPage from './pages/AboutPage';
@@ -40,6 +41,7 @@ function Layout() {
       <main className="app-shell">
         <Outlet />
       </main>
+      <Footer />
     </>
   );
 }
