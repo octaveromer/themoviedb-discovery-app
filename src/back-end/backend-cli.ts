@@ -2,7 +2,10 @@
 import { Command } from 'commander';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { upsertGenres } from './database/genre-repository.ts';
+import {
+  deleteUnusedGenres,
+  upsertGenres,
+} from './database/genre-repository.ts';
 import { DEFAULT_DATABASE_PATH, getDatabase } from './database/schema.ts';
 import { parseGenresCsv } from './utils/genres-csv.ts';
 
@@ -56,6 +59,24 @@ program
       database.close();
     }
     console.log(`${genres.length} genre(s) imported into ${resolve(path)}`);
+  });
+
+program
+  .command('clean-genres')
+  .description('Delete the genres that are not associated with any movie')
+  .action(() => {
+    const path = getDatabasePath();
+
+    const database = getDatabase(path);
+    let deletedCount: number;
+    try {
+      deletedCount = deleteUnusedGenres(database);
+    } finally {
+      database.close();
+    }
+    console.log(
+      `${deletedCount} unused genre(s) deleted from ${resolve(path)}`,
+    );
   });
 
 program.parse();

@@ -168,4 +168,47 @@ describe('backend-cli.ts', () => {
       expect(logSpy).not.toHaveBeenCalled();
     });
   });
+
+  describe('clean-genres', () => {
+    it('deletes only the unused genres of the database selected with --path', async () => {
+      // Arrange: drama is linked to a movie, action is not
+      const customDatabasePath = './data/custom-movies.sqlite';
+      const database = await useInMemoryDatabase();
+      database.exec(`
+        INSERT INTO genres VALUES (18, 'Drama'), (28, 'Action');
+        INSERT INTO movies (id, title, original_title, original_language, overview, collected_at)
+        VALUES (1, 'Fight Club', 'Fight Club', 'en', '', '2026-01-01');
+        INSERT INTO movie_genres VALUES (1, 18);
+      `);
+
+      // Act
+      await runCliWithArgs(['--path', customDatabasePath, 'clean-genres']);
+
+      // Assert
+      expect(getDatabaseMock).toHaveBeenCalledWith(customDatabasePath);
+      expect(listGenres(database)).toEqual([{ id: 18, name: 'Drama' }]);
+      expect(closeMock).toHaveBeenCalledOnce();
+      expect(logSpy).toHaveBeenCalledWith(
+        `1 unused genre(s) deleted from ${resolve(customDatabasePath)}`,
+      );
+    });
+
+    it('closes the database and rethrows when the cleanup fails', async () => {
+      // Arrange: a database without schema makes the query fail
+      getDatabaseMock.mockReturnValueOnce({
+        close: closeMock,
+        prepare: () => {
+          throw new Error('no such table: genres');
+        },
+      });
+
+      // Act & Assert
+      await expect(runCliWithArgs(['clean-genres'])).rejects.toThrow(
+        'no such table: genres',
+      );
+      expect(getDatabaseMock).toHaveBeenCalledWith(DEFAULT_DATABASE_PATH);
+      expect(closeMock).toHaveBeenCalledOnce();
+      expect(logSpy).not.toHaveBeenCalled();
+    });
+  });
 });
