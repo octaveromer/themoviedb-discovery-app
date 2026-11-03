@@ -1,7 +1,12 @@
 import { DatabaseSync } from 'node:sqlite';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { Genre } from '../types/MoviesTypes.ts';
-import { findGenreById, listGenres, upsertGenres } from './genre-repository.ts';
+import {
+  deleteUnusedGenres,
+  findGenreById,
+  listGenres,
+  upsertGenres,
+} from './genre-repository.ts';
 import { initializeSchema } from './schema.ts';
 
 describe('genre-repository.ts', () => {
@@ -127,6 +132,31 @@ describe('genre-repository.ts', () => {
 
       // Assert: the transaction is rolled back, comedy is not saved
       expect(listGenres(database)).toEqual([drama]);
+    });
+  });
+
+  describe('deleteUnusedGenres', () => {
+    it('deletes only the genres that are not associated with a movie', () => {
+      // Arrange: drama is linked to a movie, action and comedy are not
+      upsertGenres(database, [drama, action, comedy]);
+      database
+        .prepare(
+          `INSERT INTO movies (id, title, original_title, original_language, overview, collected_at)
+           VALUES (1, 'Fight Club', 'Fight Club', 'en', '', '2026-01-01')`,
+        )
+        .run();
+      database.prepare('INSERT INTO movie_genres VALUES (1, 18)').run();
+
+      // Act
+      const deletedCount = deleteUnusedGenres(database);
+
+      // Assert
+      expect(deletedCount).toBe(2);
+      expect(listGenres(database)).toEqual([drama]);
+    });
+
+    it('returns 0 when there is no genre to delete', () => {
+      expect(deleteUnusedGenres(database)).toBe(0);
     });
   });
 });
