@@ -2,6 +2,21 @@ import type { DatabaseSync } from 'node:sqlite';
 import type { Genre } from '../types/MoviesTypes.ts';
 
 /**
+ * Finds a genre by its identifier.
+ * @param database The SQLite database to query.
+ * @param id The identifier of the genre.
+ * @returns The matching genre, or `undefined` if no genre has this identifier.
+ */
+export function findGenreById(
+  database: DatabaseSync,
+  id: number,
+): Genre | undefined {
+  return database
+    .prepare('SELECT id, name FROM genres WHERE id = ?')
+    .get(id) as Genre | undefined;
+}
+
+/**
  * Lists every genre.
  * @param database The SQLite database to query.
  * @returns The genres sorted by ascending identifier.

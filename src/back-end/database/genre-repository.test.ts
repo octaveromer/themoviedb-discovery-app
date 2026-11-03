@@ -1,7 +1,7 @@
 import { DatabaseSync } from 'node:sqlite';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { Genre } from '../types/MoviesTypes.ts';
-import { listGenres, upsertGenres } from './genre-repository.ts';
+import { findGenreById, listGenres, upsertGenres } from './genre-repository.ts';
 import { initializeSchema } from './schema.ts';
 
 describe('genre-repository.ts', () => {
@@ -19,6 +19,24 @@ describe('genre-repository.ts', () => {
 
   afterEach(() => {
     database.close();
+  });
+
+  describe('findGenreById', () => {
+    it('returns the genre matching the identifier', () => {
+      // Arrange
+      upsertGenres(database, [drama, action]);
+
+      // Act & Assert
+      expect(findGenreById(database, 28)).toEqual(action);
+    });
+
+    it('returns undefined when no genre has the identifier', () => {
+      // Arrange
+      upsertGenres(database, [drama]);
+
+      // Act & Assert
+      expect(findGenreById(database, 99)).toBeUndefined();
+    });
   });
 
   describe('listGenres', () => {
