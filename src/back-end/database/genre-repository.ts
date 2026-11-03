@@ -55,3 +55,17 @@ export function upsertGenres(
     throw error;
   }
 }
+
+/**
+ * Deletes the genres that are not associated with any movie.
+ * @param database The SQLite database to update.
+ * @returns The number of deleted genres.
+ */
+export function deleteUnusedGenres(database: DatabaseSync): number {
+  const result = database
+    .prepare(
+      'DELETE FROM genres WHERE id NOT IN (SELECT genre_id FROM movie_genres)',
+    )
+    .run();
+  return Number(result.changes);
+}
