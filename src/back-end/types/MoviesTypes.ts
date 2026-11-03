@@ -24,6 +24,12 @@ export type TmdbMovie = {
   vote_count: number;
 };
 
+// TypeScript type for a movie genre, identified by its TMDB numeric id.
+export type Genre = {
+  id: number;
+  name: string;
+};
+
 export type TmdbMovieDetails = {
   adult: boolean;
   backdrop_path: string | null;
@@ -38,7 +44,7 @@ export type TmdbMovieDetails = {
   video: boolean;
   vote_average: number;
   vote_count: number;
-  genres: Array<{ id: number; name: string }>;
+  genres: Genre[];
   tagline: string | null;
   production_companies: Array<{
     id: number;
