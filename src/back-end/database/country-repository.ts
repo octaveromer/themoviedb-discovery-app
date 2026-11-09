@@ -2,6 +2,21 @@ import type { DatabaseSync } from 'node:sqlite';
 import type { Country } from '../types/MoviesTypes.ts';
 
 /**
+ * Finds a country by its code.
+ * @param database The SQLite database to query.
+ * @param code The ISO 3166-1 code of the country (e.g. "FR").
+ * @returns The matching country, or `undefined` if no country has this code.
+ */
+export function findCountryByCode(
+  database: DatabaseSync,
+  code: string,
+): Country | undefined {
+  return database
+    .prepare('SELECT code, name FROM countries WHERE code = ?')
+    .get(code) as Country | undefined;
+}
+
+/**
  * Lists every country.
  * @param database The SQLite database to query.
  * @returns The countries sorted by ascending code, or an empty list if there is none.

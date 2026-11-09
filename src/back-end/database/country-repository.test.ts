@@ -1,7 +1,11 @@
 import { DatabaseSync } from 'node:sqlite';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { Country } from '../types/MoviesTypes.ts';
-import { listCountries, upsertCountries } from './country-repository.ts';
+import {
+  findCountryByCode,
+  listCountries,
+  upsertCountries,
+} from './country-repository.ts';
 import { initializeSchema } from './schema.ts';
 
 describe('country-repository.ts', () => {
@@ -22,6 +26,24 @@ describe('country-repository.ts', () => {
 
   afterEach(() => {
     database.close();
+  });
+
+  describe('findCountryByCode', () => {
+    it('returns the country matching the code', () => {
+      // Arrange
+      upsertCountries(database, [france, unitedStates]);
+
+      // Act & Assert
+      expect(findCountryByCode(database, 'US')).toEqual(unitedStates);
+    });
+
+    it('returns undefined when no country has the code', () => {
+      // Arrange
+      upsertCountries(database, [france]);
+
+      // Act & Assert
+      expect(findCountryByCode(database, 'DE')).toBeUndefined();
+    });
   });
 
   describe('listCountries', () => {
