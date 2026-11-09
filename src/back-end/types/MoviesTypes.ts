@@ -30,6 +30,12 @@ export type Genre = {
   name: string;
 };
 
+// TypeScript type for a production country, identified by its ISO 3166-1 code (e.g. "FR").
+export type Country = {
+  code: string;
+  name: string;
+};
+
 export type TmdbMovieDetails = {
   adult: boolean;
   backdrop_path: string | null;
