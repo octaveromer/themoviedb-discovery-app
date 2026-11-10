@@ -83,6 +83,29 @@ npx tsx src/back-end/backend-cli.ts --path ./data/custom-movies.sqlite add-genre
 npx tsx src/back-end/backend-cli.ts --path ./data/custom-movies.sqlite clean-genres
 ```
 
+## Import et nettoyage des pays
+
+La commande `add-countries` insère ou met à jour les pays listés dans un fichier CSV. Un fichier d'exemple est fourni dans `data/countries.csv` :
+
+```sh
+npx tsx src/back-end/backend-cli.ts add-countries ./data/countries.csv
+```
+
+Le fichier doit contenir exactement les colonnes `code` et `name`, dans n'importe quel ordre. Chaque code est composé de deux lettres majuscules (`FR`, `GB`, `US`…). Comme pour les genres, le fichier est validé avant l'import et un pays déjà présent est mis à jour sans doublon.
+
+La commande `clean-countries` supprime les pays qui ne sont associés à aucun film :
+
+```sh
+npx tsx src/back-end/backend-cli.ts clean-countries
+```
+
+L'option `--path`, placée avant le nom de la commande, permet de choisir une autre base :
+
+```sh
+npx tsx src/back-end/backend-cli.ts --path ./data/custom-movies.sqlite add-countries ./data/countries.csv
+npx tsx src/back-end/backend-cli.ts --path ./data/custom-movies.sqlite clean-countries
+```
+
 ## API locale
 
 | Méthode | Route                 | Description                                                       |
