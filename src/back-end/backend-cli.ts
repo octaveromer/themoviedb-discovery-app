@@ -2,7 +2,10 @@
 import { Command } from 'commander';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { upsertCountries } from './database/country-repository.ts';
+import {
+  deleteUnusedCountries,
+  upsertCountries,
+} from './database/country-repository.ts';
 import {
   deleteUnusedGenres,
   upsertGenres,
@@ -98,6 +101,24 @@ program
     }
     console.log(
       `${countries.length} country(ies) imported into ${resolve(path)}`,
+    );
+  });
+
+program
+  .command('clean-countries')
+  .description('Delete the countries that are not associated with any movie')
+  .action(() => {
+    const path = getDatabasePath();
+
+    const database = getDatabase(path);
+    let deletedCount: number;
+    try {
+      deletedCount = deleteUnusedCountries(database);
+    } finally {
+      database.close();
+    }
+    console.log(
+      `${deletedCount} unused country(ies) deleted from ${resolve(path)}`,
     );
   });
 

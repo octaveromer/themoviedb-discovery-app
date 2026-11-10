@@ -290,4 +290,47 @@ describe('backend-cli.ts', () => {
       expect(logSpy).not.toHaveBeenCalled();
     });
   });
+
+  describe('clean-countries', () => {
+    it('deletes only the unused countries of the database selected with --path', async () => {
+      // Arrange: France is linked to a movie, the United States are not
+      const customDatabasePath = './data/custom-movies.sqlite';
+      const database = await useInMemoryDatabase();
+      database.exec(`
+        INSERT INTO countries VALUES ('FR', 'France'), ('US', 'United States');
+        INSERT INTO movies (id, title, original_title, original_language, overview, collected_at)
+        VALUES (1, 'Amélie', 'Le Fabuleux Destin d''Amélie Poulain', 'fr', '', '2026-01-01');
+        INSERT INTO production_countries VALUES (1, 'FR');
+      `);
+
+      // Act
+      await runCliWithArgs(['--path', customDatabasePath, 'clean-countries']);
+
+      // Assert
+      expect(getDatabaseMock).toHaveBeenCalledWith(customDatabasePath);
+      expect(listCountries(database)).toEqual([{ code: 'FR', name: 'France' }]);
+      expect(closeMock).toHaveBeenCalledOnce();
+      expect(logSpy).toHaveBeenCalledWith(
+        `1 unused country(ies) deleted from ${resolve(customDatabasePath)}`,
+      );
+    });
+
+    it('closes the database and rethrows when the cleanup fails', async () => {
+      // Arrange: a database without schema makes the query fail
+      getDatabaseMock.mockReturnValueOnce({
+        close: closeMock,
+        prepare: () => {
+          throw new Error('no such table: countries');
+        },
+      });
+
+      // Act & Assert
+      await expect(runCliWithArgs(['clean-countries'])).rejects.toThrow(
+        'no such table: countries',
+      );
+      expect(getDatabaseMock).toHaveBeenCalledWith(DEFAULT_DATABASE_PATH);
+      expect(closeMock).toHaveBeenCalledOnce();
+      expect(logSpy).not.toHaveBeenCalled();
+    });
+  });
 });
