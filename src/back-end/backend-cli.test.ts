@@ -3,6 +3,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { listCountries } from './database/country-repository.ts';
 import { listGenres } from './database/genre-repository.ts';
 
 const DEFAULT_DATABASE_PATH = '/tmp/movies-default.sqlite';
@@ -207,6 +208,84 @@ describe('backend-cli.ts', () => {
         'no such table: genres',
       );
       expect(getDatabaseMock).toHaveBeenCalledWith(DEFAULT_DATABASE_PATH);
+      expect(closeMock).toHaveBeenCalledOnce();
+      expect(logSpy).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('add-countries', () => {
+    it('imports the countries of the CSV file into the default database', async () => {
+      // Arrange
+      const database = await useInMemoryDatabase();
+      const csvFile = writeCsvFile('code,name\nUS,United States\nFR,France\n');
+
+      // Act
+      await runCliWithArgs(['add-countries', csvFile]);
+
+      // Assert
+      expect(getDatabaseMock).toHaveBeenCalledWith(DEFAULT_DATABASE_PATH);
+      expect(listCountries(database)).toEqual([
+        { code: 'FR', name: 'France' },
+        { code: 'US', name: 'United States' },
+      ]);
+      expect(closeMock).toHaveBeenCalledOnce();
+      expect(logSpy).toHaveBeenCalledWith(
+        `2 country(ies) imported into ${resolve(DEFAULT_DATABASE_PATH)}`,
+      );
+    });
+
+    it('updates existing countries of the database selected with --path', async () => {
+      // Arrange: the database already contains GB with another name
+      const customDatabasePath = './data/custom-movies.sqlite';
+      const database = await useInMemoryDatabase();
+      database
+        .prepare("INSERT INTO countries VALUES ('GB', 'Royaume-Uni')")
+        .run();
+      const csvFile = writeCsvFile('code,name\nGB,United Kingdom\n');
+
+      // Act
+      await runCliWithArgs([
+        '--path',
+        customDatabasePath,
+        'add-countries',
+        csvFile,
+      ]);
+
+      // Assert: the name is updated without creating a duplicate
+      expect(getDatabaseMock).toHaveBeenCalledWith(customDatabasePath);
+      expect(listCountries(database)).toEqual([
+        { code: 'GB', name: 'United Kingdom' },
+      ]);
+      expect(logSpy).toHaveBeenCalledWith(
+        `1 country(ies) imported into ${resolve(customDatabasePath)}`,
+      );
+    });
+
+    it('does not open the database when the CSV file is invalid', async () => {
+      // Arrange
+      const csvFile = writeCsvFile('code,name\nfr,France\n');
+
+      // Act & Assert
+      await expect(runCliWithArgs(['add-countries', csvFile])).rejects.toThrow(
+        /Invalid country code "fr"/,
+      );
+      expect(getDatabaseMock).not.toHaveBeenCalled();
+    });
+
+    it('rolls back the import, closes the database and rethrows when a country cannot be saved', async () => {
+      // Arrange: a trigger makes the insertion of XX fail
+      const database = await useInMemoryDatabase();
+      database.exec(`
+        CREATE TRIGGER reject_country BEFORE INSERT ON countries
+        WHEN NEW.code = 'XX' BEGIN SELECT RAISE(ABORT, 'country rejected'); END;
+      `);
+      const csvFile = writeCsvFile('code,name\nFR,France\nXX,Unknown\n');
+
+      // Act & Assert
+      await expect(runCliWithArgs(['add-countries', csvFile])).rejects.toThrow(
+        'country rejected',
+      );
+      expect(listCountries(database)).toEqual([]);
       expect(closeMock).toHaveBeenCalledOnce();
       expect(logSpy).not.toHaveBeenCalled();
     });

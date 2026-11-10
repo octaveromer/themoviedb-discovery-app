@@ -2,11 +2,13 @@
 import { Command } from 'commander';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { upsertCountries } from './database/country-repository.ts';
 import {
   deleteUnusedGenres,
   upsertGenres,
 } from './database/genre-repository.ts';
 import { DEFAULT_DATABASE_PATH, getDatabase } from './database/schema.ts';
+import { parseCountriesCsv } from './utils/countries-csv.ts';
 import { parseGenresCsv } from './utils/genres-csv.ts';
 
 /** Command-line interface for movie database operations. */
@@ -76,6 +78,26 @@ program
     }
     console.log(
       `${deletedCount} unused genre(s) deleted from ${resolve(path)}`,
+    );
+  });
+
+program
+  .command('add-countries')
+  .description('Insert or update the countries listed in a CSV file')
+  .argument('<csv-file>', 'CSV file with "code" and "name" columns')
+  .action((csvFile: string) => {
+    // Validate the whole file before opening the database
+    const countries = parseCountriesCsv(readFileSync(csvFile, 'utf8'));
+    const path = getDatabasePath();
+
+    const database = getDatabase(path);
+    try {
+      upsertCountries(database, countries);
+    } finally {
+      database.close();
+    }
+    console.log(
+      `${countries.length} country(ies) imported into ${resolve(path)}`,
     );
   });
 
