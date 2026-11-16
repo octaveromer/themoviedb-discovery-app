@@ -1,7 +1,7 @@
 import { DatabaseSync } from 'node:sqlite';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { StoredMovie } from '../types/MoviesTypes.ts';
-import { listMovies, upsertMovies } from './movie-repository.ts';
+import { findMovieById, listMovies, upsertMovies } from './movie-repository.ts';
 import { initializeSchema } from './schema.ts';
 
 describe('movie-repository.ts', () => {
@@ -66,6 +66,24 @@ describe('movie-repository.ts', () => {
 
   afterEach(() => {
     database.close();
+  });
+
+  describe('findMovieById', () => {
+    it('returns the movie matching the identifier', () => {
+      // Arrange
+      upsertMovies(database, [parasite, fightClub]);
+
+      // Act & Assert
+      expect(findMovieById(database, 496243)).toEqual(parasite);
+    });
+
+    it('returns undefined when no movie has the identifier', () => {
+      // Arrange
+      upsertMovies(database, [fightClub]);
+
+      // Act & Assert
+      expect(findMovieById(database, 999)).toBeUndefined();
+    });
   });
 
   describe('listMovies', () => {

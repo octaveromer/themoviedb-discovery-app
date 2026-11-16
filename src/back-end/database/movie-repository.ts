@@ -22,6 +22,21 @@ const MOVIE_COLUMNS = [
 ] as const;
 
 /**
+ * Finds a movie by its identifier.
+ * @param database The SQLite database to query.
+ * @param id The TMDB identifier of the movie.
+ * @returns The matching movie, or `undefined` if no movie has this identifier.
+ */
+export function findMovieById(
+  database: DatabaseSync,
+  id: number,
+): StoredMovie | undefined {
+  return database
+    .prepare(`SELECT ${MOVIE_COLUMNS.join(', ')} FROM movies WHERE id = ?`)
+    .get(id) as StoredMovie | undefined;
+}
+
+/**
  * Lists every movie.
  * @param database The SQLite database to query.
  * @returns The movies sorted by ascending identifier, or an empty list if there is none.
