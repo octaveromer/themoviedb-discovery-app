@@ -1,5 +1,6 @@
 import type { DatabaseSync } from 'node:sqlite';
 import type { StoredMovie } from '../types/MoviesTypes.ts';
+import { runInTransaction } from './transaction.ts';
 
 // Columns of the movies table read and written by this module.
 // The generated release_year column is left out: SQLite computes it.
@@ -68,15 +69,9 @@ export function upsertMovies(
     ON CONFLICT (id) DO UPDATE SET ${updates.join(', ')}
   `);
 
-  database.exec('BEGIN TRANSACTION;');
-  try {
+  runInTransaction(database, () => {
     for (const movie of movies) {
       statement.run(...MOVIE_COLUMNS.map((column) => movie[column]));
     }
-    database.exec('COMMIT;');
-  } catch (error) {
-    // A movie could not be saved, cancel every change made by this call
-    database.exec('ROLLBACK;');
-    throw error;
-  }
+  });
 }
