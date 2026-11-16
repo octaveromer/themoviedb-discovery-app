@@ -146,4 +146,34 @@ program
     console.log(`${movies.length} movie(s) imported into ${resolve(path)}`);
   });
 
-program.parse();
+program
+  .command('sync-movies')
+  .description(
+    'Update the movies of a release year, with their genres and countries, from TMDB',
+  )
+  .argument('<year>', 'release year of the movies, e.g. 2020')
+  .option(
+    '--pages <count>',
+    'number of TMDB pages to read (20 movies per page)',
+    '1',
+  )
+  .action(async (year: string, { pages }: { pages: string }) => {
+    // The service is loaded only for this command: it needs the TMDB access
+    // token, which the other commands do not require
+    const { syncMoviesByYear } = await import('./services/movie-sync.ts');
+    const path = getDatabasePath();
+
+    const database = getDatabase(path);
+    let result: Awaited<ReturnType<typeof syncMoviesByYear>>;
+    try {
+      result = await syncMoviesByYear(database, year, Number(pages));
+    } finally {
+      database.close();
+    }
+    console.log(
+      `${result.movies} movie(s), ${result.genres} genre(s) and ${result.countries} country(ies) synced for ${year} into ${resolve(path)}`,
+    );
+  });
+
+// parseAsync waits for the asynchronous commands and propagates their errors
+await program.parseAsync();
