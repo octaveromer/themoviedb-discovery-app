@@ -106,6 +106,30 @@ npx tsx src/back-end/backend-cli.ts --path ./data/custom-movies.sqlite add-count
 npx tsx src/back-end/backend-cli.ts --path ./data/custom-movies.sqlite clean-countries
 ```
 
+## Import des films
+
+La commande `add-movies` insère ou met à jour les films listés dans un fichier CSV. Un fichier d'exemple est fourni dans `data/movies.csv` :
+
+```sh
+npx tsx src/back-end/backend-cli.ts add-movies ./data/movies.csv
+npx tsx src/back-end/backend-cli.ts --path ./data/custom-movies.sqlite add-movies ./data/movies.csv
+```
+
+Le fichier doit contenir exactement les colonnes de `data/movies.csv`, dans n'importe quel ordre :
+
+| Colonne                                        | Contenu                                                                             |
+| ---------------------------------------------- | ----------------------------------------------------------------------------------- |
+| `id`                                           | Identifiant TMDB du film, entier positif (obligatoire).                             |
+| `title`, `original_title`, `original_language` | Titre, titre original et langue originale (obligatoires).                           |
+| `overview`                                     | Résumé, qui peut être vide.                                                         |
+| `release_date`                                 | Date de sortie au format `AAAA-MM-JJ`.                                              |
+| `popularity`, `vote_average`, `vote_count`     | Popularité, note moyenne et nombre de votes.                                        |
+| `poster_path`, `backdrop_path`                 | Chemins des images TMDB.                                                            |
+| `runtime`, `budget`, `revenue`                 | Durée en minutes, budget et recettes. Une valeur `0` est considérée vide.           |
+| `genres`, `production_countries`               | Acceptées mais pas importées : les liens avec les genres et pays ne sont pas créés. |
+
+Les colonnes facultatives peuvent être vides. Le fichier est entièrement validé avant l'import : en cas d'erreur, le message indique la valeur, la colonne et la ligne, et aucun film n'est enregistré. Un film déjà présent est mis à jour sans doublon, et la date de l'import est enregistrée comme date de collecte (`collected_at`).
+
 ## API locale
 
 | Méthode | Route                  | Description                                                       |
