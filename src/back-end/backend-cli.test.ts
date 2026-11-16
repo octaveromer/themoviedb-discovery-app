@@ -14,6 +14,15 @@ const getDatabaseMock = vi.fn<(path: string) => unknown>(() => ({
   close: closeMock,
 }));
 
+// The synchronization service is replaced by a mock: no request is sent to TMDB
+const { syncMoviesByYearMock } = vi.hoisted(() => ({
+  syncMoviesByYearMock: vi.fn(),
+}));
+
+vi.mock('./services/movie-sync.ts', () => ({
+  syncMoviesByYear: syncMoviesByYearMock,
+}));
+
 vi.mock('./database/schema.ts', async (importOriginal) => ({
   ...(await importOriginal<typeof import('./database/schema.ts')>()),
   DEFAULT_DATABASE_PATH,
@@ -427,6 +436,75 @@ describe('backend-cli.ts', () => {
         'movie rejected',
       );
       expect(listMovies(database)).toEqual([]);
+      expect(closeMock).toHaveBeenCalledOnce();
+      expect(logSpy).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('sync-movies', () => {
+    it('syncs one page of the year into the default database', async () => {
+      // Arrange
+      syncMoviesByYearMock.mockResolvedValueOnce({
+        movies: 20,
+        genres: 12,
+        countries: 8,
+      });
+
+      // Act
+      await runCliWithArgs(['sync-movies', '2019']);
+
+      // Assert
+      expect(getDatabaseMock).toHaveBeenCalledWith(DEFAULT_DATABASE_PATH);
+      expect(syncMoviesByYearMock).toHaveBeenCalledWith(
+        expect.objectContaining({ close: closeMock }),
+        '2019',
+        1,
+      );
+      expect(closeMock).toHaveBeenCalledOnce();
+      expect(logSpy).toHaveBeenCalledWith(
+        `20 movie(s), 12 genre(s) and 8 country(ies) synced for 2019 into ${resolve(DEFAULT_DATABASE_PATH)}`,
+      );
+    });
+
+    it('reads the number of pages given with --pages into the database selected with --path', async () => {
+      // Arrange
+      const customDatabasePath = './data/custom-movies.sqlite';
+      syncMoviesByYearMock.mockResolvedValueOnce({
+        movies: 60,
+        genres: 15,
+        countries: 10,
+      });
+
+      // Act
+      await runCliWithArgs([
+        '--path',
+        customDatabasePath,
+        'sync-movies',
+        '2020',
+        '--pages',
+        '3',
+      ]);
+
+      // Assert
+      expect(getDatabaseMock).toHaveBeenCalledWith(customDatabasePath);
+      expect(syncMoviesByYearMock).toHaveBeenCalledWith(
+        expect.anything(),
+        '2020',
+        3,
+      );
+      expect(logSpy).toHaveBeenCalledWith(
+        `60 movie(s), 15 genre(s) and 10 country(ies) synced for 2020 into ${resolve(customDatabasePath)}`,
+      );
+    });
+
+    it('closes the database and rethrows when the synchronization fails', async () => {
+      // Arrange
+      syncMoviesByYearMock.mockRejectedValueOnce(new Error('TMDB unavailable'));
+
+      // Act & Assert
+      await expect(runCliWithArgs(['sync-movies', '2019'])).rejects.toThrow(
+        'TMDB unavailable',
+      );
       expect(closeMock).toHaveBeenCalledOnce();
       expect(logSpy).not.toHaveBeenCalled();
     });

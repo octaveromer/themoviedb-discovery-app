@@ -1,5 +1,6 @@
 import type { DatabaseSync } from 'node:sqlite';
 import type { StoredMovie } from '../types/MoviesTypes.ts';
+import { runInTransaction } from './transaction.ts';
 
 // Columns of the movies table read and written by this module.
 // The generated release_year column is left out: SQLite computes it.
@@ -68,15 +69,99 @@ export function upsertMovies(
     ON CONFLICT (id) DO UPDATE SET ${updates.join(', ')}
   `);
 
-  database.exec('BEGIN TRANSACTION;');
-  try {
+  runInTransaction(database, () => {
     for (const movie of movies) {
       statement.run(...MOVIE_COLUMNS.map((column) => movie[column]));
     }
-    database.exec('COMMIT;');
-  } catch (error) {
-    // A movie could not be saved, cancel every change made by this call
-    database.exec('ROLLBACK;');
-    throw error;
-  }
+  });
+}
+
+/**
+ * Lists the genres of a movie.
+ * @param database The SQLite database to query.
+ * @param movieId The identifier of the movie.
+ * @returns The genre identifiers of the movie, sorted in ascending order.
+ */
+export function listMovieGenreIds(
+  database: DatabaseSync,
+  movieId: number,
+): number[] {
+  return database
+    .prepare(
+      'SELECT genre_id FROM movie_genres WHERE movie_id = ? ORDER BY genre_id',
+    )
+    .all(movieId)
+    .map((row) => Number(row.genre_id));
+}
+
+/**
+ * Replaces the genres of a movie: the previous links are removed.
+ * The movie and the genres must already exist in the database.
+ * @param database The SQLite database to update.
+ * @param movieId The identifier of the movie.
+ * @param genreIds The identifiers of its genres; a repeated identifier is linked once.
+ * @throws {Error} If the movie or a genre does not exist; the previous links are then kept.
+ */
+export function replaceMovieGenres(
+  database: DatabaseSync,
+  movieId: number,
+  genreIds: Iterable<number>,
+): void {
+  const insert = database.prepare(
+    'INSERT OR IGNORE INTO movie_genres (movie_id, genre_id) VALUES (?, ?)',
+  );
+
+  runInTransaction(database, () => {
+    database
+      .prepare('DELETE FROM movie_genres WHERE movie_id = ?')
+      .run(movieId);
+    for (const genreId of genreIds) {
+      insert.run(movieId, genreId);
+    }
+  });
+}
+
+/**
+ * Lists the production countries of a movie.
+ * @param database The SQLite database to query.
+ * @param movieId The identifier of the movie.
+ * @returns The country codes of the movie, sorted in ascending order.
+ */
+export function listMovieCountryCodes(
+  database: DatabaseSync,
+  movieId: number,
+): string[] {
+  return database
+    .prepare(
+      'SELECT country_code FROM production_countries WHERE movie_id = ? ORDER BY country_code',
+    )
+    .all(movieId)
+    .map((row) => String(row.country_code));
+}
+
+/**
+ * Replaces the production countries of a movie: the previous links are removed.
+ * The movie and the countries must already exist in the database.
+ * @param database The SQLite database to update.
+ * @param movieId The identifier of the movie.
+ * @param countryCodes The codes of its countries; a repeated code is linked once.
+ * @throws {Error} If the movie or a country does not exist; the previous links are then kept.
+ */
+export function replaceMovieCountries(
+  database: DatabaseSync,
+  movieId: number,
+  countryCodes: Iterable<string>,
+): void {
+  const insert = database.prepare(
+    'INSERT OR IGNORE INTO production_countries (movie_id, country_code) VALUES (?, ?)',
+  );
+
+  runInTransaction(database, () => {
+    database
+      .prepare('DELETE FROM production_countries WHERE movie_id = ?')
+      .run(movieId);
+    for (const countryCode of countryCodes) {
+      insert.run(movieId, countryCode);
+    }
+  });
 }
