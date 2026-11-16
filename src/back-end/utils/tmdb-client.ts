@@ -1,10 +1,10 @@
 import type {
   TmdbMovieFullDetails,
   TmdbMoviesRawResponse,
-} from '../types/MoviesTypes';
-import { tmdbAccessToken } from './config';
-import { DEFAULT_LANGUAGE } from './constants';
-import { createDiscoverQueryParams } from './discover-query-params';
+} from '../types/MoviesTypes.ts';
+import { tmdbAccessToken } from './config.ts';
+import { DEFAULT_LANGUAGE } from './constants.ts';
+import { createDiscoverQueryParams } from './discover-query-params.ts';
 
 // Base URL of the TMDB API, version 3
 const TMDB_API_URL = 'https://api.themoviedb.org/3';

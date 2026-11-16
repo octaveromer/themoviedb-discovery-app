@@ -1,5 +1,5 @@
 import type { Request } from 'express';
-import { DEFAULT_LANGUAGE, DEFAULT_PAGE, DEFAULT_REGION } from './constants';
+import { DEFAULT_LANGUAGE, DEFAULT_PAGE, DEFAULT_REGION } from './constants.ts';
 
 // A release year is a string of four digits between 1000 and 9999
 const YEAR_PATTERN = /^[1-9]\d{3}$/;
