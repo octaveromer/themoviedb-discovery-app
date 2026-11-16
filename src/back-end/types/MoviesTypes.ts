@@ -36,6 +36,28 @@ export type Country = {
   name: string;
 };
 
+// TypeScript type for a movie stored in the SQLite `movies` table.
+// The release year is not included: the database computes it from `release_date`.
+export type StoredMovie = {
+  id: number;
+  title: string;
+  original_title: string;
+  original_language: string;
+  overview: string;
+  // Release date in the 'YYYY-MM-DD' format
+  release_date: string | null;
+  popularity: number | null;
+  vote_average: number | null;
+  vote_count: number | null;
+  poster_path: string | null;
+  backdrop_path: string | null;
+  runtime_minutes: number | null;
+  budget: number | null;
+  revenue: number | null;
+  // Date and time when the movie data was collected, in the ISO 8601 format
+  collected_at: string;
+};
+
 export type TmdbMovieDetails = {
   adult: boolean;
   backdrop_path: string | null;
