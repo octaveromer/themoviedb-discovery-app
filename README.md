@@ -190,6 +190,37 @@ Erreurs possibles :
 - **400** : `year` est absent ou invalide. TMDB n'est pas appelé.
 - **500** : l'appel à TMDB a échoué (erreur HTTP, réseau ou réponse illisible). La réponse contient le message `Failed to discover movies` et l'erreur est journalisée côté serveur.
 
+## Storybook
+
+[Storybook](https://storybook.js.org/) permet de visualiser les composants du front-end, en particulier les widgets du tableau de bord, et leurs différents états, sans lancer toute l'application.
+
+```sh
+npm run storybook       # Lance Storybook sur http://localhost:6006
+npm run build-storybook # Construit une version statique dans storybook-static/
+```
+
+Le menu **Theme** de la barre d'outils affiche les composants avec le thème clair ou sombre de l'application.
+
+Pour ajouter une story, créez un fichier `NomDuComposant.stories.tsx` à côté du composant. Chaque export décrit un état du composant :
+
+```tsx
+import type { Meta, StoryObj } from '@storybook/react-vite';
+import DashboardPage from './DashboardPage';
+
+const meta = {
+  title: 'Pages/DashboardPage',
+  component: DashboardPage,
+} satisfies Meta<typeof DashboardPage>;
+
+export default meta;
+
+type Story = StoryObj<typeof meta>;
+
+export const WithoutWidgets: Story = {};
+```
+
+La configuration se trouve dans le dossier `.storybook/`. Les fichiers `*.stories.tsx` ne sont pas comptés dans la couverture des tests.
+
 ## Vérifications
 
 ```sh
