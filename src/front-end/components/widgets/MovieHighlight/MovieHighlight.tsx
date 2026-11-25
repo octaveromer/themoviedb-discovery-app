@@ -4,6 +4,16 @@ import './MovieHighlight.css';
 // Base URL of the small TMDB posters, as used by the movies list
 const POSTER_BASE_URL = 'https://image.tmdb.org/t/p/w185';
 
+/** Movie selected by a widget, as provided by the data source. */
+export interface WidgetMovie {
+  /** Title of the movie. */
+  title: string;
+  /** TMDB path of the poster, e.g. "/abc.jpg", or `null` when there is none. */
+  posterPath: string | null;
+  /** Release year, or `null` when it is unknown. */
+  releaseYear: number | null;
+}
+
 export interface MovieHighlightProps {
   /** Title of the movie. */
   title: string;
