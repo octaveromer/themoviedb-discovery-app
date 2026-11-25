@@ -5,6 +5,7 @@ import { join, resolve } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { listCountries } from './database/country-repository.ts';
 import { listGenres } from './database/genre-repository.ts';
+import { findMovieById, listMovies } from './database/movie-repository.ts';
 
 const DEFAULT_DATABASE_PATH = '/tmp/movies-default.sqlite';
 
@@ -329,6 +330,103 @@ describe('backend-cli.ts', () => {
         'no such table: countries',
       );
       expect(getDatabaseMock).toHaveBeenCalledWith(DEFAULT_DATABASE_PATH);
+      expect(closeMock).toHaveBeenCalledOnce();
+      expect(logSpy).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('add-movies', () => {
+    const header =
+      'id,title,original_title,original_language,overview,release_date,popularity,vote_average,vote_count,poster_path,backdrop_path,runtime,budget,revenue,genres,production_countries';
+    const creedLine =
+      '677179,Creed III,Creed III,en,,2023-03-01,2865.256,7.3,1183,/poster.jpg,/backdrop.jpg,116,75000000,275300000,"[18,28]",[]';
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('imports the movies of the CSV file with the import date into the default database', async () => {
+      // Arrange: freeze the clock to know the collection date
+      vi.useFakeTimers({ toFake: ['Date'] });
+      vi.setSystemTime(new Date('2026-11-16T10:00:00.000Z'));
+      const database = await useInMemoryDatabase();
+      const csvFile = writeCsvFile(`${header}\n${creedLine}\n`);
+
+      // Act
+      await runCliWithArgs(['add-movies', csvFile]);
+
+      // Assert
+      expect(getDatabaseMock).toHaveBeenCalledWith(DEFAULT_DATABASE_PATH);
+      expect(findMovieById(database, 677179)).toMatchObject({
+        title: 'Creed III',
+        runtime_minutes: 116,
+        collected_at: '2026-11-16T10:00:00.000Z',
+      });
+      expect(closeMock).toHaveBeenCalledOnce();
+      expect(logSpy).toHaveBeenCalledWith(
+        `1 movie(s) imported into ${resolve(DEFAULT_DATABASE_PATH)}`,
+      );
+    });
+
+    it('updates an existing movie of the database selected with --path', async () => {
+      // Arrange: the movie is already stored with another title
+      const customDatabasePath = './data/custom-movies.sqlite';
+      const database = await useInMemoryDatabase();
+      database.exec(`
+        INSERT INTO movies (id, title, original_title, original_language, overview, collected_at)
+        VALUES (677179, 'Creed 3', 'Creed III', 'en', '', '2026-01-01');
+      `);
+      const csvFile = writeCsvFile(`${header}\n${creedLine}\n`);
+
+      // Act
+      await runCliWithArgs([
+        '--path',
+        customDatabasePath,
+        'add-movies',
+        csvFile,
+      ]);
+
+      // Assert: the information is updated without creating a duplicate
+      expect(getDatabaseMock).toHaveBeenCalledWith(customDatabasePath);
+      expect(listMovies(database)).toHaveLength(1);
+      expect(findMovieById(database, 677179)).toMatchObject({
+        title: 'Creed III',
+        release_date: '2023-03-01',
+      });
+      expect(logSpy).toHaveBeenCalledWith(
+        `1 movie(s) imported into ${resolve(customDatabasePath)}`,
+      );
+    });
+
+    it('does not open the database when the CSV file is invalid', async () => {
+      // Arrange: the identifier is not a positive integer
+      const csvFile = writeCsvFile(
+        `${header}\n${creedLine.replace('677179', '0')}\n`,
+      );
+
+      // Act & Assert
+      await expect(runCliWithArgs(['add-movies', csvFile])).rejects.toThrow(
+        'Invalid value "0" for "id" on line 2',
+      );
+      expect(getDatabaseMock).not.toHaveBeenCalled();
+    });
+
+    it('rolls back the import, closes the database and rethrows when a movie cannot be saved', async () => {
+      // Arrange: a trigger makes the insertion of movie 999 fail
+      const database = await useInMemoryDatabase();
+      database.exec(`
+        CREATE TRIGGER reject_movie BEFORE INSERT ON movies
+        WHEN NEW.id = 999 BEGIN SELECT RAISE(ABORT, 'movie rejected'); END;
+      `);
+      const csvFile = writeCsvFile(
+        `${header}\n${creedLine}\n${creedLine.replace('677179', '999')}\n`,
+      );
+
+      // Act & Assert
+      await expect(runCliWithArgs(['add-movies', csvFile])).rejects.toThrow(
+        'movie rejected',
+      );
+      expect(listMovies(database)).toEqual([]);
       expect(closeMock).toHaveBeenCalledOnce();
       expect(logSpy).not.toHaveBeenCalled();
     });

@@ -10,9 +10,11 @@ import {
   deleteUnusedGenres,
   upsertGenres,
 } from './database/genre-repository.ts';
+import { upsertMovies } from './database/movie-repository.ts';
 import { DEFAULT_DATABASE_PATH, getDatabase } from './database/schema.ts';
 import { parseCountriesCsv } from './utils/countries-csv.ts';
 import { parseGenresCsv } from './utils/genres-csv.ts';
+import { parseMoviesCsv } from './utils/movies-csv.ts';
 
 /** Command-line interface for movie database operations. */
 const program = new Command()
@@ -120,6 +122,28 @@ program
     console.log(
       `${deletedCount} unused country(ies) deleted from ${resolve(path)}`,
     );
+  });
+
+program
+  .command('add-movies')
+  .description('Insert or update the movies listed in a CSV file')
+  .argument('<csv-file>', 'CSV file with the columns of data/movies.csv')
+  .action((csvFile: string) => {
+    // Validate the whole file before opening the database.
+    // The import date is stored as the collection date of each movie.
+    const movies = parseMoviesCsv(
+      readFileSync(csvFile, 'utf8'),
+      new Date().toISOString(),
+    );
+    const path = getDatabasePath();
+
+    const database = getDatabase(path);
+    try {
+      upsertMovies(database, movies);
+    } finally {
+      database.close();
+    }
+    console.log(`${movies.length} movie(s) imported into ${resolve(path)}`);
   });
 
 program.parse();
