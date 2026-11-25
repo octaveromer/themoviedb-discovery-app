@@ -1,0 +1,39 @@
+/* Movie displayed by a widget: poster on the left, information on the right */
+.movie-highlight {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr);
+  gap: 14px;
+  align-items: start;
+}
+
+.movie-highlight-poster {
+  width: 64px;
+  aspect-ratio: 2 / 3;
+  border-radius: 6px;
+  object-fit: cover;
+}
+
+/* Placeholder with the same size as a poster */
+.movie-highlight-poster-missing {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border: 1px dashed var(--line);
+  background: var(--surface-muted);
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  text-align: center;
+}
+
+.movie-highlight-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.movie-highlight-year {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
