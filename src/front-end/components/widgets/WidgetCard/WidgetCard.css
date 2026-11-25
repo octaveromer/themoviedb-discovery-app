@@ -56,3 +56,13 @@
   color: var(--text-muted);
   font-size: 0.9rem;
 }
+
+/* Name highlighted by a widget, e.g. a country; long names wrap */
+.widget-card-highlight {
+  margin: 0;
+  color: var(--ink-strong);
+  font-size: 1.25rem;
+  font-weight: 800;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
