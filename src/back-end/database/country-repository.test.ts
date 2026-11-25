@@ -2,6 +2,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { Country } from '../types/MoviesTypes.ts';
 import {
+  deleteUnusedCountries,
   findCountryByCode,
   listCountries,
   upsertCountries,
@@ -146,6 +147,29 @@ describe('country-repository.ts', () => {
 
       // Assert: the transaction is rolled back, the United States are not saved
       expect(listCountries(database)).toEqual([france]);
+    });
+  });
+
+  describe('deleteUnusedCountries', () => {
+    it('deletes only the countries that are not associated with a movie', () => {
+      // Arrange: France is linked to a movie, the United Kingdom and the United States are not
+      upsertCountries(database, [france, unitedKingdom, unitedStates]);
+      database.exec(`
+        INSERT INTO movies (id, title, original_title, original_language, overview, collected_at)
+        VALUES (1, 'Amélie', 'Le Fabuleux Destin d''Amélie Poulain', 'fr', '', '2026-01-01');
+        INSERT INTO production_countries VALUES (1, 'FR');
+      `);
+
+      // Act
+      const deletedCount = deleteUnusedCountries(database);
+
+      // Assert
+      expect(deletedCount).toBe(2);
+      expect(listCountries(database)).toEqual([france]);
+    });
+
+    it('returns 0 when there is no country to delete', () => {
+      expect(deleteUnusedCountries(database)).toBe(0);
     });
   });
 });

@@ -3,10 +3,15 @@ import { Command } from 'commander';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import {
+  deleteUnusedCountries,
+  upsertCountries,
+} from './database/country-repository.ts';
+import {
   deleteUnusedGenres,
   upsertGenres,
 } from './database/genre-repository.ts';
 import { DEFAULT_DATABASE_PATH, getDatabase } from './database/schema.ts';
+import { parseCountriesCsv } from './utils/countries-csv.ts';
 import { parseGenresCsv } from './utils/genres-csv.ts';
 
 /** Command-line interface for movie database operations. */
@@ -76,6 +81,44 @@ program
     }
     console.log(
       `${deletedCount} unused genre(s) deleted from ${resolve(path)}`,
+    );
+  });
+
+program
+  .command('add-countries')
+  .description('Insert or update the countries listed in a CSV file')
+  .argument('<csv-file>', 'CSV file with "code" and "name" columns')
+  .action((csvFile: string) => {
+    // Validate the whole file before opening the database
+    const countries = parseCountriesCsv(readFileSync(csvFile, 'utf8'));
+    const path = getDatabasePath();
+
+    const database = getDatabase(path);
+    try {
+      upsertCountries(database, countries);
+    } finally {
+      database.close();
+    }
+    console.log(
+      `${countries.length} country(ies) imported into ${resolve(path)}`,
+    );
+  });
+
+program
+  .command('clean-countries')
+  .description('Delete the countries that are not associated with any movie')
+  .action(() => {
+    const path = getDatabasePath();
+
+    const database = getDatabase(path);
+    let deletedCount: number;
+    try {
+      deletedCount = deleteUnusedCountries(database);
+    } finally {
+      database.close();
+    }
+    console.log(
+      `${deletedCount} unused country(ies) deleted from ${resolve(path)}`,
     );
   });
 
