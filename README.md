@@ -108,17 +108,41 @@ npx tsx src/back-end/backend-cli.ts --path ./data/custom-movies.sqlite clean-cou
 
 ## API locale
 
-| Méthode | Route                 | Description                                                       |
-| ------- | --------------------- | ----------------------------------------------------------------- |
-| `GET`   | `/api/health`         | Vérifie que le serveur répond.                                    |
-| `GET`   | `/api/movies/popular` | Renvoie les films populaires.                                     |
-| `GET`   | `/api/movies/:id`     | Renvoie les détails du film correspondant à son identifiant TMDB. |
+| Méthode | Route                  | Description                                                       |
+| ------- | ---------------------- | ----------------------------------------------------------------- |
+| `GET`   | `/api/health`          | Vérifie que le serveur répond.                                    |
+| `GET`   | `/api/movies/popular`  | Renvoie les films populaires.                                     |
+| `GET`   | `/api/movies/:id`      | Renvoie les détails du film correspondant à son identifiant TMDB. |
+| `GET`   | `/api/discover/movies` | Renvoie les films sortis une année donnée (API Discover de TMDB). |
 
 Les routes des films acceptent les paramètres `language`, `page` et `region`. Exemple :
 
 ```text
 /api/movies/popular?language=fr-FR&page=1&region=FR
 ```
+
+### Films par année
+
+La route `/api/discover/movies` interroge l'API Discover de TMDB avec le filtre `primary_release_year` :
+
+```text
+/api/discover/movies?year=2020
+/api/discover/movies?year=2020&language=en-US&page=2&region=US
+```
+
+| Paramètre  | Obligatoire | Valeur par défaut | Description                                |
+| ---------- | ----------- | ----------------- | ------------------------------------------ |
+| `year`     | oui         | —                 | Année de sortie, de `1000` à `9999`.       |
+| `language` | non         | `fr-FR`           | Langue des titres et résumés.              |
+| `page`     | non         | `1`               | Page de résultats à renvoyer.              |
+| `region`   | non         | `FR`              | Région utilisée par TMDB pour les sorties. |
+
+Chaque appel renvoie une seule page de résultats. La réponse contient `page`, `results`, `total_pages` et `total_results` : pour consulter les pages suivantes, il faut relancer la requête avec le paramètre `page`.
+
+Erreurs possibles :
+
+- **400** : `year` est absent ou invalide. TMDB n'est pas appelé.
+- **500** : l'appel à TMDB a échoué (erreur HTTP, réseau ou réponse illisible). La réponse contient le message `Failed to discover movies` et l'erreur est journalisée côté serveur.
 
 ## Vérifications
 
