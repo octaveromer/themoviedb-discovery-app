@@ -29,6 +29,19 @@ describe('StatValue', () => {
     expect(container.textContent).toBe('107min106,7min');
   });
 
+  it('completes the decimals with zeros up to the requested minimum', () => {
+    // Arrange & Act: exactly two decimals, as for a rating.
+    const { container } = render(
+      <>
+        <StatValue value={6.8} unit="/ 10" minimumFractionDigits={2} />
+        <StatValue value={6.784} unit="/ 10" minimumFractionDigits={2} />
+      </>,
+    );
+
+    // Assert
+    expect(container.textContent).toBe('6,80/ 106,78/ 10');
+  });
+
   it('renders 0 as a valid value', () => {
     // Arrange & Act
     const { container } = render(<StatValue value={0} unit="film" />);

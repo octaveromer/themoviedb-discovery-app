@@ -5,6 +5,8 @@ interface StatValueProps {
   unit: string;
   /** Maximum number of decimals displayed, 0 by default. */
   maximumFractionDigits?: number;
+  /** Minimum number of decimals displayed, completed with zeros: 0 by default. */
+  minimumFractionDigits?: number;
 }
 
 /**
@@ -15,13 +17,19 @@ export default function StatValue({
   value,
   unit,
   maximumFractionDigits = 0,
+  minimumFractionDigits = 0,
 }: StatValueProps) {
   if (value === null) {
     return <p className="widget-card-message">Aucune donnée disponible.</p>;
   }
 
+  // The maximum can not be lower than the minimum, e.g. exactly 2 decimals
   const formattedValue = new Intl.NumberFormat('fr-FR', {
-    maximumFractionDigits,
+    minimumFractionDigits,
+    maximumFractionDigits: Math.max(
+      maximumFractionDigits,
+      minimumFractionDigits,
+    ),
   }).format(value);
 
   return (
