@@ -1,0 +1,51 @@
+/* Card shared by the dashboard widgets */
+.widget-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 140px;
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.widget-card-title {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.widget-card-message {
+  margin: auto 0;
+  color: var(--text-muted);
+}
+
+.widget-card-error {
+  color: #a1281f;
+  font-weight: 700;
+}
+
+/* Lighter red to stay readable on the dark surface */
+[data-theme='dark'] .widget-card-error {
+  color: #ffb4a9;
+}
+
+/* Main value of a widget, e.g. the number of movies */
+.widget-card-value {
+  margin: 0;
+  color: var(--heading);
+  font-size: 2.4rem;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.widget-card-unit {
+  margin-left: 6px;
+  color: var(--text-secondary);
+  font-size: 1rem;
+  font-weight: 600;
+}
