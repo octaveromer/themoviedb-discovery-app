@@ -49,3 +49,10 @@
   font-size: 1rem;
   font-weight: 600;
 }
+
+/* Short explanation written under the main value, e.g. how it is computed */
+.widget-card-caption {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
