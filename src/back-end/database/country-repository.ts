@@ -1,5 +1,6 @@
 import type { DatabaseSync } from 'node:sqlite';
 import type { Country } from '../types/MoviesTypes.ts';
+import { runInTransaction } from './transaction.ts';
 
 /**
  * Finds a country by its code.
@@ -43,17 +44,11 @@ export function upsertCountries(
     ON CONFLICT (code) DO UPDATE SET name = excluded.name
   `);
 
-  database.exec('BEGIN TRANSACTION;');
-  try {
+  runInTransaction(database, () => {
     for (const country of countries) {
       statement.run(country.code, country.name);
     }
-    database.exec('COMMIT;');
-  } catch (error) {
-    // A country could not be saved, cancel every change made by this call
-    database.exec('ROLLBACK;');
-    throw error;
-  }
+  });
 }
 
 /**

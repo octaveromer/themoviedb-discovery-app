@@ -130,6 +130,28 @@ Le fichier doit contenir exactement les colonnes de `data/movies.csv`, dans n'im
 
 Les colonnes facultatives peuvent être vides. Le fichier est entièrement validé avant l'import : en cas d'erreur, le message indique la valeur, la colonne et la ligne, et aucun film n'est enregistré. Un film déjà présent est mis à jour sans doublon, et la date de l'import est enregistrée comme date de collecte (`collected_at`).
 
+## Synchronisation des films depuis TMDB
+
+La commande `sync-movies` met à jour les films sortis une année donnée, avec leurs genres et leurs pays de production, à partir de l'API TMDB. Elle nécessite le jeton `TMDB_ACCESS_TOKEN`, contrairement aux autres commandes du CLI.
+
+```sh
+npx tsx src/back-end/backend-cli.ts sync-movies 2019
+npx tsx src/back-end/backend-cli.ts --path ./data/custom-movies.sqlite sync-movies 2019 --pages 3
+```
+
+| Paramètre         | Obligatoire | Valeur par défaut | Description                                     |
+| ----------------- | ----------- | ----------------- | ----------------------------------------------- |
+| `<année>`         | oui         | —                 | Année de sortie, de `1000` à `9999`.            |
+| `--pages <count>` | non         | `1`               | Nombre de pages TMDB à lire, 20 films par page. |
+
+Pour chaque film trouvé par l'API Discover, la commande récupère ses détails (durée, budget, recettes, genres et pays), puis enregistre :
+
+1. les genres et les pays, insérés ou mis à jour ;
+2. les films, insérés ou mis à jour, avec la date de synchronisation comme date de collecte ;
+3. les liens entre chaque film et ses genres et pays, qui remplacent les liens précédents.
+
+Toutes les données sont récupérées avant l'écriture, puis enregistrées dans une seule transaction : si un appel à TMDB ou une écriture échoue, la base n'est pas modifiée. Les noms des genres et des pays sont récupérés en français (`fr-FR`).
+
 ## API locale
 
 | Méthode | Route                  | Description                                                       |

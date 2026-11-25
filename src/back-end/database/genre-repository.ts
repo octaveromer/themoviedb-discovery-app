@@ -1,5 +1,6 @@
 import type { DatabaseSync } from 'node:sqlite';
 import type { Genre } from '../types/MoviesTypes.ts';
+import { runInTransaction } from './transaction.ts';
 
 /**
  * Finds a genre by its identifier.
@@ -43,17 +44,11 @@ export function upsertGenres(
     ON CONFLICT (id) DO UPDATE SET name = excluded.name
   `);
 
-  database.exec('BEGIN TRANSACTION;');
-  try {
+  runInTransaction(database, () => {
     for (const genre of genres) {
       statement.run(genre.id, genre.name);
     }
-    database.exec('COMMIT;');
-  } catch (error) {
-    // A genre could not be saved, cancel every change made by this call
-    database.exec('ROLLBACK;');
-    throw error;
-  }
+  });
 }
 
 /**

@@ -82,6 +82,15 @@ export type TmdbMovieDetails = {
   }>;
 };
 
+// TypeScript type for the movie details returned by TMDB with the fields needed to
+// fill the database: runtime, budget, revenue and production countries.
+export type TmdbMovieFullDetails = TmdbMovieDetails & {
+  runtime: number | null;
+  budget: number;
+  revenue: number;
+  production_countries: Array<{ iso_3166_1: string; name: string }>;
+};
+
 // TypeScript type for the API response when fetching movies, containing an array of supported Movie objects.
 export type MoviesApiResponse = {
   page: number;

@@ -1,7 +1,15 @@
 import { DatabaseSync } from 'node:sqlite';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { StoredMovie } from '../types/MoviesTypes.ts';
-import { findMovieById, listMovies, upsertMovies } from './movie-repository.ts';
+import {
+  findMovieById,
+  listMovieCountryCodes,
+  listMovieGenreIds,
+  listMovies,
+  replaceMovieCountries,
+  replaceMovieGenres,
+  upsertMovies,
+} from './movie-repository.ts';
 import { initializeSchema } from './schema.ts';
 
 describe('movie-repository.ts', () => {
@@ -206,5 +214,97 @@ describe('movie-repository.ts', () => {
         expect(listMovies(database)).toEqual([parasite]);
       },
     );
+  });
+
+  describe('movie links', () => {
+    beforeEach(() => {
+      // Check the foreign keys, as getDatabase does for the real database
+      database.exec('PRAGMA foreign_keys = ON;');
+      upsertMovies(database, [parasite, fightClub]);
+      database.exec(`
+        INSERT INTO genres VALUES (18, 'Drama'), (35, 'Comedy'), (53, 'Thriller');
+        INSERT INTO countries VALUES ('KR', 'South Korea'), ('US', 'United States');
+      `);
+    });
+
+    describe('replaceMovieGenres', () => {
+      it('links the genres to the movie, once each', () => {
+        // Act: genre 35 is given twice
+        replaceMovieGenres(database, parasite.id, [53, 35, 18, 35]);
+
+        // Assert: the other movie has no genre
+        expect(listMovieGenreIds(database, parasite.id)).toEqual([18, 35, 53]);
+        expect(listMovieGenreIds(database, fightClub.id)).toEqual([]);
+      });
+
+      it('removes the previous genres of the movie', () => {
+        // Arrange
+        replaceMovieGenres(database, parasite.id, [18, 35]);
+
+        // Act
+        replaceMovieGenres(database, parasite.id, [53]);
+
+        // Assert
+        expect(listMovieGenreIds(database, parasite.id)).toEqual([53]);
+      });
+
+      it('removes every genre when the list is empty', () => {
+        // Arrange
+        replaceMovieGenres(database, parasite.id, [18]);
+
+        // Act
+        replaceMovieGenres(database, parasite.id, []);
+
+        // Assert
+        expect(listMovieGenreIds(database, parasite.id)).toEqual([]);
+      });
+
+      it('rejects an unknown genre and keeps the previous genres', () => {
+        // Arrange
+        replaceMovieGenres(database, parasite.id, [18]);
+
+        // Act & Assert
+        expect(() =>
+          replaceMovieGenres(database, parasite.id, [35, 999]),
+        ).toThrow(/FOREIGN KEY constraint failed/);
+        expect(listMovieGenreIds(database, parasite.id)).toEqual([18]);
+      });
+    });
+
+    describe('replaceMovieCountries', () => {
+      it('links the countries to the movie, once each', () => {
+        // Act: KR is given twice
+        replaceMovieCountries(database, parasite.id, ['US', 'KR', 'KR']);
+
+        // Assert: the other movie has no country
+        expect(listMovieCountryCodes(database, parasite.id)).toEqual([
+          'KR',
+          'US',
+        ]);
+        expect(listMovieCountryCodes(database, fightClub.id)).toEqual([]);
+      });
+
+      it('removes the previous countries of the movie', () => {
+        // Arrange
+        replaceMovieCountries(database, parasite.id, ['KR', 'US']);
+
+        // Act
+        replaceMovieCountries(database, parasite.id, ['KR']);
+
+        // Assert
+        expect(listMovieCountryCodes(database, parasite.id)).toEqual(['KR']);
+      });
+
+      it('rejects an unknown country and keeps the previous countries', () => {
+        // Arrange
+        replaceMovieCountries(database, parasite.id, ['KR']);
+
+        // Act & Assert
+        expect(() =>
+          replaceMovieCountries(database, parasite.id, ['US', 'XX']),
+        ).toThrow(/FOREIGN KEY constraint failed/);
+        expect(listMovieCountryCodes(database, parasite.id)).toEqual(['KR']);
+      });
+    });
   });
 });
